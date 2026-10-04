@@ -1,16 +1,34 @@
-# Compiled class file
+# =========================================================================
+# Enterprise Spring Boot Microservices .gitignore
+# =========================================================================
+
+# -------------------------------------------------------------------------
+# Bytecode and Compilation Artifacts
+# -------------------------------------------------------------------------
 *.class
-
-# Log file
-*.log
-
-# BlueJ files
 *.ctxt
-
-# Mobile Tools for Java (J2ME)
 .mtj.tmp/
 
-# Package Files #
+# -------------------------------------------------------------------------
+# Build Tool Directories & Outputs (Maven / Gradle)
+# -------------------------------------------------------------------------
+target/
+**/target/
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+build/
+**/build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+out/
+**/out/
+bin/
+**/bin/
+.gradle/
+
+# Package files
 *.jar
 *.war
 *.nar
@@ -19,6 +37,112 @@
 *.tar.gz
 *.rar
 
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+# Preserve Maven Wrapper binaries & scripts
+!.mvn/wrapper/maven-wrapper.jar
+!**/mvnw
+!**/mvnw.cmd
+
+# -------------------------------------------------------------------------
+# Logs and Runtime Diagnostics
+# -------------------------------------------------------------------------
+*.log
+*.log.*
+logs/
+**/logs/
+log/
+**/log/
 hs_err_pid*
 replay_pid*
+
+# -------------------------------------------------------------------------
+# IDE - IntelliJ IDEA
+# -------------------------------------------------------------------------
+.idea/
+**/.idea/
+*.iws
+*.iml
+**/*.iml
+*.ipr
+
+# -------------------------------------------------------------------------
+# IDE - Eclipse / Spring Tool Suite (STS)
+# -------------------------------------------------------------------------
+.apt_generated
+.apt_generated_tests
+.classpath
+**/.classpath
+.factorypath
+**/.factorypath
+.project
+**/.project
+.settings/
+**/.settings/
+.springBeans
+.sts4-cache
+
+# -------------------------------------------------------------------------
+# IDE - Visual Studio Code
+# -------------------------------------------------------------------------
+.vscode/
+**/.vscode/
+
+# -------------------------------------------------------------------------
+# IDE - NetBeans
+# -------------------------------------------------------------------------
+**/nbproject/private/
+**/nbbuild/
+**/dist/
+**/nbdist/
+**/.nb-gradle/
+
+# -------------------------------------------------------------------------
+# Operating System Files
+# -------------------------------------------------------------------------
+# macOS
+.DS_Store
+**/.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# Linux
+*~
+
+# -------------------------------------------------------------------------
+# Environment & Sensitive Credentials
+# -------------------------------------------------------------------------
+.env
+**/.env
+.env.local
+.env.*.local
+*.local.properties
+*.local.yml
+*.local.yaml
+secrets.properties
+*.pem
+*.key
+*.crt
+
+# Never ignore environment template examples
+!.env.example
+!**/.env.example
+
+# -------------------------------------------------------------------------
+# Temporary & Editor Backup Files
+# -------------------------------------------------------------------------
+*.swp
+*.swo
+*.bak
+*.tmp
+
+# -------------------------------------------------------------------------
+# Spring Initializr Boilerplate Help Files
+# -------------------------------------------------------------------------
+HELP.md
+**/HELP.md

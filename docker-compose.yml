@@ -1,0 +1,94 @@
+version: '3.8'
+
+services:
+  eureka-server:
+    build:
+      context: ./eureka-server
+      dockerfile: Dockerfile
+    container_name: eureka-server
+    ports:
+      - "${EUREKA_SERVER_PORT:-8000}:8000"
+    environment:
+      - SERVER_PORT=8000
+    networks:
+      - microservices-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8000/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    ports:
+      - "${GATEWAY_PORT:-5000}:5000"
+    environment:
+      - SERVER_PORT=5000
+      - EUREKA_SERVER_URL=http://eureka-server:8000/eureka/
+      - JWT_SECRET=${JWT_SECRET:-dGhpc0lzQVZlcnlTZWN1cmVTZWNyZXRLZXlGb3JKd3RUb2tlbkdlbmVyYXRpb25Jbk9yaW9uQXBwbGljYXRpb24xMjM0NTY3ODkwIQ==}
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - microservices-net
+
+  user-service:
+    build:
+      context: ./user-service
+      dockerfile: Dockerfile
+    container_name: user-service
+    ports:
+      - "${USER_SERVICE_PORT:-5501}:5501"
+    environment:
+      - SERVER_PORT=5501
+      - EUREKA_SERVER_URL=http://eureka-server:8000/eureka/
+      - DB_URL=${USER_DB_URL:-jdbc:postgresql://aws-1-ap-northeast-2.pooler.supabase.com:5432/postgres?sslmode=require}
+      - DB_USERNAME=${USER_DB_USERNAME:-postgres.scmrhyygcxwnlrpcxblf}
+      - DB_PASSWORD=${USER_DB_PASSWORD:-1HP2dELbtkcOZZug}
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - microservices-net
+
+  organization-service:
+    build:
+      context: ./organization-service
+      dockerfile: Dockerfile
+    container_name: organization-service
+    ports:
+      - "${ORGANIZATION_SERVICE_PORT:-5502}:5502"
+    environment:
+      - SERVER_PORT=5502
+      - EUREKA_SERVER_URL=http://eureka-server:8000/eureka/
+      - DB_URL=${ORG_DB_URL:-jdbc:postgresql://ep-green-hat-ax3pj3e9-pooler.c-4.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require}
+      - DB_USERNAME=${ORG_DB_USERNAME:-neondb_owner}
+      - DB_PASSWORD=${ORG_DB_PASSWORD:-npg_06gWBVZFnzDu}
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - microservices-net
+
+  otp-service:
+    build:
+      context: ./otp-service
+      dockerfile: Dockerfile
+    container_name: otp-service
+    ports:
+      - "${OTP_SERVICE_PORT:-5503}:5503"
+    environment:
+      - SERVER_PORT=5503
+      - EUREKA_SERVER_URL=http://eureka-server:8000/eureka/
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - microservices-net
+
+networks:
+  microservices-net:
+    driver: bridge
