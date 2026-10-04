@@ -129,9 +129,29 @@ secrets.properties
 *.key
 *.crt
 
-# Never ignore environment template examples
+# Spring Application Configuration & Credentials
+application.properties
+**/application.properties
+application-*.properties
+**/application-*.properties
+application.yml
+**/application.yml
+application-*.yml
+**/application-*.yml
+application.yaml
+**/application.yaml
+application-*.yaml
+**/application-*.yaml
+
+# Never ignore environment & configuration template examples
 !.env.example
 !**/.env.example
+!application.properties.example
+!**/application.properties.example
+!application.yml.example
+!**/application.yml.example
+!application.yaml.example
+!**/application.yaml.example
 
 # -------------------------------------------------------------------------
 # Temporary & Editor Backup Files

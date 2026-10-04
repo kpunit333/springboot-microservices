@@ -39,3 +39,20 @@ build/
 ### OS ###
 .DS_Store
 Thumbs.db
+
+### Config & Secrets ###
+application.properties
+application-*.properties
+application.yml
+application-*.yml
+application.yaml
+application-*.yaml
+.env
+.env.*
+*.local.properties
+*.local.yml
+*.local.yaml
+!application.properties.example
+!application.yml.example
+!application.yaml.example
+!.env.example
