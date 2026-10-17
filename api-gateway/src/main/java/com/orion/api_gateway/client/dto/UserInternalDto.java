@@ -1,6 +1,5 @@
 package com.orion.api_gateway.client.dto;
 
-import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 
 import lombok.AllArgsConstructor;
@@ -20,17 +19,19 @@ public class UserInternalDto {
 
     private String name;
 
+    private String email;
+
     private String password;
 
     private String status;
 
     private Short unlockAttempts;
 
-    private LocalDateTime unlockAt;
+    private OffsetDateTime unlockAt;
 
     private OffsetDateTime createdAt;
 
-    private LocalDateTime expireAt;
+    private OffsetDateTime expireAt;
 
     private String role;
 }

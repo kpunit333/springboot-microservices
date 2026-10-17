@@ -27,6 +27,7 @@ import com.orion.api_gateway.dto.request.IndividualLoginRequest;
 import com.orion.api_gateway.dto.request.LogoutRequest;
 import com.orion.api_gateway.dto.request.OrganizationLoginRequest;
 import com.orion.api_gateway.dto.request.RefreshTokenRequest;
+import com.orion.api_gateway.dto.response.UserProfileDto;
 import com.orion.api_gateway.dto.response.AuthResponse;
 import com.orion.api_gateway.dto.response.TokenRefreshResponse;
 import com.orion.api_gateway.exception.AccountStatusException;
@@ -83,6 +84,35 @@ class AuthServiceTest {
         assertEquals("access_token_123", response.getAccessToken());
         assertEquals("refresh_token_123", response.getRefreshToken());
         assertEquals("Bearer", response.getTokenType());
+    }
+
+    @Test
+    void testIndividualLoginSuccessWithEmail() {
+        UserInternalDto user = UserInternalDto.builder()
+                .userId(1L)
+                .username("puneet")
+                .name("Puneet Shaw")
+                .email("puneet@example.com")
+                .password("plain_pass_123")
+                .status("ACTIVE")
+                .role("USER")
+                .build();
+
+        when(userServiceClient.getUserByUsername("puneet@example.com")).thenReturn(Optional.of(user));
+        when(jwtService.generateAccessToken(eq("1"), anyMap())).thenReturn("access_token_123");
+        when(jwtService.generateRefreshToken(eq("1"), anyMap())).thenReturn("refresh_token_123");
+        when(jwtService.getAccessTokenExpirationMillis()).thenReturn(900000L);
+
+        IndividualLoginRequest request = IndividualLoginRequest.builder()
+                .email("puneet@example.com")
+                .password("plain_pass_123")
+                .build();
+
+        AuthResponse response = authService.loginIndividual(request);
+
+        assertNotNull(response);
+        assertEquals("access_token_123", response.getAccessToken());
+        assertEquals("puneet@example.com", ((UserProfileDto) response.getUser()).getEmail());
     }
 
     @Test

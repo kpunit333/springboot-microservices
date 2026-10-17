@@ -1,8 +1,11 @@
 package com.orion.user_service.exception;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -23,10 +26,18 @@ public class GlobalExceptionHandler {
         log.warn("Illegal argument / business validation error: {}", ex.getMessage());
         String msg = ex.getMessage();
         HttpStatus status = HttpStatus.BAD_REQUEST;
-        if (msg != null && msg.toLowerCase().contains("already exists")) {
-            status = HttpStatus.CONFLICT;
-        } else if (msg != null && msg.toLowerCase().contains("not found")) {
-            status = HttpStatus.NOT_FOUND;
+
+        if (msg != null) {
+            String lower = msg.toLowerCase();
+            if (lower.contains("already exists") || lower.contains("already in use")) {
+                status = HttpStatus.CONFLICT;
+            } else if (lower.contains("not found")) {
+                status = HttpStatus.NOT_FOUND;
+            } else if (lower.contains("unauthorized") || lower.contains("invalid credentials")) {
+                status = HttpStatus.UNAUTHORIZED;
+            } else if (lower.contains("forbidden") || lower.contains("locked") || lower.contains("disabled")) {
+                status = HttpStatus.FORBIDDEN;
+            }
         }
         return ResponseEntity.status(status).body(ApiResponse.error(msg));
     }
@@ -43,6 +54,33 @@ public class GlobalExceptionHandler {
         String errorMsg = sb.toString();
         log.warn("Validation error: {}", errorMsg);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(errorMsg));
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMessageNotReadable(
+            HttpMessageNotReadableException ex, HttpServletRequest request) {
+        String uri = request != null ? request.getRequestURI() : "";
+        log.warn("Malformed or unreadable request body for {}: {}", uri, ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error("Malformed request payload: please verify the JSON format and field types"));
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDataIntegrityViolation(
+            DataIntegrityViolationException ex, HttpServletRequest request) {
+        String uri = request != null ? request.getRequestURI() : "";
+        log.warn("Data integrity violation at {}: {}", uri, ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiResponse.error("Database constraint violation: duplicate record or conflicting data"));
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMediaTypeNotSupported(
+            HttpMediaTypeNotSupportedException ex, HttpServletRequest request) {
+        String uri = request != null ? request.getRequestURI() : "";
+        log.warn("Unsupported media type at {}: {}", uri, ex.getContentType());
+        return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+                .body(ApiResponse.error("Unsupported media type: please provide 'application/json'"));
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)

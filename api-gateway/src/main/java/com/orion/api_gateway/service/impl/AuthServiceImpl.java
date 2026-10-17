@@ -1,6 +1,7 @@
 package com.orion.api_gateway.service.impl;
 
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -43,12 +44,17 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public AuthResponse loginIndividual(IndividualLoginRequest request) {
-        log.info("Processing individual login for username: {}", request.getUsername());
+        String identifier = request != null ? request.getLoginIdentifier() : null;
+        log.info("Processing individual login for identifier: {}", identifier);
 
-        UserInternalDto user = userServiceClient.getUserByUsername(request.getUsername())
+        if (identifier == null || identifier.isBlank()) {
+            throw new InvalidCredentialsException("Either username or email must be provided");
+        }
+
+        UserInternalDto user = userServiceClient.getUserByUsername(identifier)
                 .orElseThrow(() -> new InvalidCredentialsException("Invalid username or password"));
 
-        log.info("Processed individual login for username: {}", user);
+        log.info("Processed individual login for username: {}", user.getUsername());
 
         // Validate account status
         if (user.getStatus() != null && !"ACTIVE".equalsIgnoreCase(user.getStatus())) {
@@ -56,7 +62,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         // Validate expiration
-        if (user.getExpireAt() != null && user.getExpireAt().isBefore(LocalDateTime.now())) {
+        if (user.getExpireAt() != null && user.getExpireAt().isBefore(OffsetDateTime.now())) {
             throw new AccountStatusException("Account has expired");
         }
 
@@ -70,6 +76,9 @@ public class AuthServiceImpl implements AuthService {
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", user.getUserId());
         claims.put("username", user.getUsername());
+        if (user.getEmail() != null) {
+            claims.put("email", user.getEmail());
+        }
         claims.put(JwtService.CLAIM_NAME, user.getName());
         claims.put(JwtService.CLAIM_ROLE, role);
         claims.put(JwtService.CLAIM_USER_TYPE, "INDIVIDUAL");
@@ -81,6 +90,7 @@ public class AuthServiceImpl implements AuthService {
         UserProfileDto profile = UserProfileDto.builder()
                 .username(user.getUsername())
                 .name(user.getName())
+                .email(user.getEmail())
                 .role(role)
                 .status(user.getStatus())
                 .build();

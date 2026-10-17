@@ -14,31 +14,25 @@ import com.orion.user_service.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Main controller for the user-service, mounted at /api/users.
- *
- * Responsibilities:
- *   - Internal endpoints consumed by the API Gateway (user auth lookups).
- *
- * Auth notes:
- *   Internal endpoints are NOT meant for external clients — protect at the
- *   network / gateway level.
+ * Main controller for the user-service internal endpoints consumed by the API Gateway.
+ * Supports authentication lookup via either username or email address.
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/users/internal/v1/")
+@RequestMapping("/api/users/internal/v1")
 public class UserController {
 
     @Autowired
     private UserService userService;
 
     /**
-     * GET /api/users/internal/v1/user/{username}
-     * Used by the API Gateway to load user credentials during login/token refresh.
+     * GET /api/users/internal/v1/user/{identifier}
+     * Used by the API Gateway to load user credentials by username OR email during login.
      */
-    @GetMapping("/user/{username}")
+    @GetMapping({"/user/{identifier}", "/user/identifier/{identifier}"})
     @ResponseStatus(HttpStatus.OK)
-    public UserInternalDto getByUsernameForAuth(@PathVariable String username) {
-        log.debug("Internal auth lookup for user: username={}", username);
-        return userService.getByUsernameForAuth(username);
+    public UserInternalDto getByIdentifierForAuth(@PathVariable String identifier) {
+        log.debug("Internal auth lookup for user identifier: {}", identifier);
+        return userService.getByIdentifierForAuth(identifier);
     }
 }

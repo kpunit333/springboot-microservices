@@ -1,6 +1,5 @@
 package com.orion.user_service.model;
 
-import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 
 import jakarta.persistence.Column;
@@ -8,23 +7,22 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Entity
-@Table(name = "users")
+@Table(name = "users", schema = "public")
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class User {
 
-	@Id
+    @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "user_id", nullable = false, updatable = false)
     private Long userId;
@@ -35,29 +33,46 @@ public class User {
     @Column(name = "name", nullable = false)
     private String name;
 
+    @Column(name = "email", nullable = false)
+    private String email;
+
     @Column(name = "password", nullable = false)
     private String password;
 
+    @Builder.Default
     @Column(name = "status", nullable = false)
-    private String status;
+    private String status = "ACTIVE";
 
     @Builder.Default
     @Column(name = "unlock_attempts", nullable = false)
     private Short unlockAttempts = 0;
 
-    // timestamp without time zone -> LocalDateTime
+    // timestamptz -> OffsetDateTime
     @Column(name = "unlock_at")
-    private LocalDateTime unlockAt;
+    private OffsetDateTime unlockAt;
 
-    // timestamp with time zone -> OffsetDateTime
+    // timestamptz -> OffsetDateTime
     @Builder.Default
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt = OffsetDateTime.now();
 
-    // timestamp without time zone -> LocalDateTime
+    // timestamptz -> OffsetDateTime
     @Column(name = "expire_at")
-    private LocalDateTime expireAt;
+    private OffsetDateTime expireAt;
 
     @Column(name = "role", columnDefinition = "text")
     private String role;
+
+    @PrePersist
+    public void prePersist() {
+        if (this.createdAt == null) {
+            this.createdAt = OffsetDateTime.now();
+        }
+        if (this.unlockAttempts == null) {
+            this.unlockAttempts = 0;
+        }
+        if (this.status == null || this.status.isBlank()) {
+            this.status = "ACTIVE";
+        }
+    }
 }
