@@ -3,6 +3,7 @@ package com.orion.organization_service.model;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
+import com.orion.organization_service.constant.OrganizationStatus;
 import com.orion.organization_service.util.CodeGenerator;
 
 import jakarta.persistence.Column;
@@ -30,12 +31,9 @@ public class Project {
     @Column(name = "project_id", nullable = false, updatable = false)
     private Long id;
 
-    /** Reference to the owning organisation (organization_id BIGINT). */
+    /** Reference to the owning organization (organization_id BIGINT). */
     @Column(name = "organization_id", nullable = false)
     private Long organizationId;
-
-    @Column(name = "code", length = 18, unique = true, nullable = false)
-    private String code;
 
     @Column(name = "name", length = 100, nullable = false)
     private String name;
@@ -45,21 +43,28 @@ public class Project {
             columnDefinition = "uuid")
     private UUID secretKey;
 
-    @Column(name = "status", columnDefinition = "text")
+    @Column(name = "status", length = 15)
     @Builder.Default
-    private String status = "Active";
+    private String status = OrganizationStatus.ACTIVE;
 
-    // TIMESTAMP WITH TIME ZONE -> OffsetDateTime
     @Builder.Default
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt = OffsetDateTime.now();
 
-    // TIMESTAMP WITH TIME ZONE -> OffsetDateTime (nullable)
     @Column(name = "expire_at")
     private OffsetDateTime expireAt;
 
     @Column(name = "description", length = 100)
     private String description;
+
+    @Column(name = "code", length = 18, unique = true, nullable = false, updatable = false)
+    private String code;
+
+    @Column(name = "email", length = 255, nullable = false)
+    private String email;
+
+    @Column(name = "password", length = 255, nullable = false)
+    private String password;
 
     @PrePersist
     public void prePersist() {

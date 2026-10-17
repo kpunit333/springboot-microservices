@@ -24,4 +24,12 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     boolean existsByCodeAndOrganizationId(String code, Long organizationId);
 
     void deleteByCodeAndOrganizationId(String code, Long organizationId);
+
+    Optional<Project> findByEmail(String email);
+
+    boolean existsByEmail(String email);
+
+    Optional<Project> findByEmailAndOrganizationId(String email, Long organizationId);
+
+    boolean existsByEmailAndOrganizationId(String email, Long organizationId);
 }

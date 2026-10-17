@@ -65,12 +65,16 @@ class CodeGeneratorTest {
     void testGenerateCurrentCode() {
         String orgCode = CodeGenerator.generateOrganizationCode();
         String proCode = CodeGenerator.generateProjectCode();
+        String purCode = CodeGenerator.generatePurposeCode();
 
         assertNotNull(orgCode);
         assertNotNull(proCode);
+        assertNotNull(purCode);
         assertTrue(orgCode.startsWith("ORG"));
         assertTrue(proCode.startsWith("PRO"));
+        assertTrue(purCode.startsWith("PUR"));
         assertEquals(17, orgCode.length());
         assertEquals(17, proCode.length());
+        assertEquals(17, purCode.length());
     }
 }

@@ -16,6 +16,10 @@ public final class CodeGenerator {
         return generateCode("PRO", LocalDateTime.now());
     }
 
+    public static String generatePurposeCode() {
+        return generateCode("PUR", LocalDateTime.now());
+    }
+
     public static String generateCode(String prefix, LocalDateTime dateTime) {
         if (dateTime == null) {
             dateTime = LocalDateTime.now();

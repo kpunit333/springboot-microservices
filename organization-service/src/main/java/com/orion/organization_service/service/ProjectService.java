@@ -4,9 +4,11 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.orion.organization_service.constant.OrganizationStatus;
 import com.orion.organization_service.dto.ProjectRequest;
 import com.orion.organization_service.dto.ProjectResponse;
 import com.orion.organization_service.model.Organization;
@@ -25,6 +27,9 @@ public class ProjectService {
 
     @Autowired
     private OrganizationRepository organizationRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     /**
      * Fetch all projects across all organizations.
@@ -54,20 +59,42 @@ public class ProjectService {
      */
     @Transactional
     public ProjectResponse createForOrganization(String organizationCode, ProjectRequest request) {
-        log.debug("Creating project for organization: code={}, projectName={}", organizationCode, request != null ? request.getName() : null);
+        log.debug("Creating project for organization: code={}, projectName={}, email={}", 
+                organizationCode, request != null ? request.getName() : null, request != null ? request.getEmail() : null);
         if (request == null) {
             throw new IllegalArgumentException("Project request body is required");
         }
         if (request.getName() == null || request.getName().isBlank()) {
             throw new IllegalArgumentException("Project name is required");
         }
+        if (request.getEmail() == null || request.getEmail().isBlank()) {
+            throw new IllegalArgumentException("Email is required");
+        }
+        if (request.getPassword() == null || request.getPassword().isBlank()) {
+            throw new IllegalArgumentException("Password is required");
+        }
 
         Organization organization = getOrganizationOrThrow(organizationCode);
+
+        if (projectRepository.existsByEmail(request.getEmail().trim())) {
+            log.warn("Project already exists with email: {}", request.getEmail());
+            throw new IllegalArgumentException("Project already exists with email: " + request.getEmail());
+        }
+
+        String description = (request.getDescription() != null && !request.getDescription().trim().isEmpty())
+                ? request.getDescription().trim()
+                : null;
 
         Project project = Project.builder()
                 .organizationId(organization.getId())
                 .name(request.getName().trim())
-                .description(request.getDescription())
+                .email(request.getEmail().trim())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .description(description)
+                .expireAt(request.getExpireAt())
+                .status(request.getStatus() != null && !request.getStatus().isBlank() 
+                        ? request.getStatus().trim() 
+                        : OrganizationStatus.ACTIVE)
                 .build();
 
         project = projectRepository.save(project);
@@ -120,7 +147,28 @@ public class ProjectService {
                 project.setName(request.getName().trim());
             }
             if (request.getDescription() != null) {
-                project.setDescription(request.getDescription());
+                project.setDescription(!request.getDescription().trim().isEmpty() 
+                        ? request.getDescription().trim() 
+                        : null);
+            }
+            if (request.getEmail() != null && !request.getEmail().isBlank()) {
+                String newEmail = request.getEmail().trim();
+                if (!newEmail.equalsIgnoreCase(project.getEmail())) {
+                    if (projectRepository.existsByEmail(newEmail)) {
+                        log.warn("Project update failed — email already in use: {}", newEmail);
+                        throw new IllegalArgumentException("Project already exists with email: " + newEmail);
+                    }
+                    project.setEmail(newEmail);
+                }
+            }
+            if (request.getPassword() != null && !request.getPassword().isBlank()) {
+                project.setPassword(passwordEncoder.encode(request.getPassword()));
+            }
+            if (request.getStatus() != null && !request.getStatus().isBlank()) {
+                project.setStatus(request.getStatus().trim());
+            }
+            if (request.getExpireAt() != null) {
+                project.setExpireAt(request.getExpireAt());
             }
         }
 
@@ -147,7 +195,28 @@ public class ProjectService {
             project.setName(request.getName().trim());
         }
         if (request.getDescription() != null) {
-            project.setDescription(request.getDescription());
+            project.setDescription(!request.getDescription().trim().isEmpty() 
+                    ? request.getDescription().trim() 
+                    : null);
+        }
+        if (request.getEmail() != null && !request.getEmail().isBlank()) {
+            String newEmail = request.getEmail().trim();
+            if (!newEmail.equalsIgnoreCase(project.getEmail())) {
+                if (projectRepository.existsByEmail(newEmail)) {
+                    log.warn("Project update failed — email already in use: {}", newEmail);
+                    throw new IllegalArgumentException("Project already exists with email: " + newEmail);
+                }
+                project.setEmail(newEmail);
+            }
+        }
+        if (request.getPassword() != null && !request.getPassword().isBlank()) {
+            project.setPassword(passwordEncoder.encode(request.getPassword()));
+        }
+        if (request.getStatus() != null && !request.getStatus().isBlank()) {
+            project.setStatus(request.getStatus().trim());
+        }
+        if (request.getExpireAt() != null) {
+            project.setExpireAt(request.getExpireAt());
         }
 
         project = projectRepository.save(project);
@@ -249,8 +318,10 @@ public class ProjectService {
                 .name(project.getName())
                 .secretKey(project.getSecretKey())
                 .status(project.getStatus())
-                .createdAt(project.getCreatedAt())
                 .description(project.getDescription())
+                .email(project.getEmail())
+                .createdAt(project.getCreatedAt())
+                .expireAt(project.getExpireAt())
                 .build();
     }
 }

@@ -27,6 +27,8 @@ class EntityPrePersistTest {
         Project project = Project.builder()
                 .organizationId(1L)
                 .name("Test Project")
+                .email("testproject@org.com")
+                .password("encodedPassword")
                 .build();
 
         project.prePersist();

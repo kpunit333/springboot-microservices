@@ -1,5 +1,7 @@
 package com.orion.organization_service.dto;
 
+import java.time.OffsetDateTime;
+
 import com.fasterxml.jackson.annotation.JsonAlias;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -22,6 +24,19 @@ public class ProjectRequest {
     /** Project name — REQUIRED for CREATE, optional for UPDATE. */
     private String name;
 
+    /** Project email — REQUIRED for CREATE, optional for UPDATE. */
+    private String email;
+
+    /** Project raw password — REQUIRED for CREATE, optional for UPDATE. */
+    private String password;
+
     /** Optional short description (max 100 chars). */
     private String description;
+
+    /** Optional status (default Active, max 15 chars). */
+    private String status;
+
+    /** Optional expiration timestamp. */
+    @JsonAlias({"expire_at", "expireAt"})
+    private OffsetDateTime expireAt;
 }

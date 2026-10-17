@@ -24,5 +24,9 @@ public class ProjectResponse {
 
     private String description;
 
+    private String email;
+
     private OffsetDateTime createdAt;
+
+    private OffsetDateTime expireAt;
 }
