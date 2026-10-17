@@ -11,6 +11,7 @@ class EntityPrePersistTest {
     void testOrganizationPrePersistGeneratesCode() {
         Organization org = Organization.builder()
                 .name("Test Org")
+                .email("test@org.com")
                 .password("encodedPassword")
                 .build();
 

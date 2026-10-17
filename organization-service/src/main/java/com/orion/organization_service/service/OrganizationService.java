@@ -7,6 +7,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.orion.organization_service.constant.OrganizationStatus;
 import com.orion.organization_service.dto.OrganizationInternalDto;
 import com.orion.organization_service.dto.OrganizationRequest;
 import com.orion.organization_service.dto.OrganizationResponse;
@@ -34,9 +35,12 @@ public class OrganizationService {
 
     @Transactional
     public OrganizationResponse create(OrganizationRequest request) {
-        log.debug("Persisting new organization: name={}", request.getName());
+        log.debug("Persisting new organization: name={}, email={}", request.getName(), request.getEmail());
         if (request.getName() == null || request.getName().isBlank()) {
             throw new IllegalArgumentException("Organization name is required");
+        }
+        if (request.getEmail() == null || request.getEmail().isBlank()) {
+            throw new IllegalArgumentException("Email is required");
         }
         if (request.getPassword() == null || request.getPassword().isBlank()) {
             throw new IllegalArgumentException("Password is required");
@@ -45,9 +49,19 @@ public class OrganizationService {
             log.warn("Organization already exists with name: {}", request.getName());
             throw new IllegalArgumentException("Organization already exists with name: " + request.getName());
         }
+        if (organizationRepository.existsByEmail(request.getEmail().trim())) {
+            log.warn("Organization already exists with email: {}", request.getEmail());
+            throw new IllegalArgumentException("Organization already exists with email: " + request.getEmail());
+        }
+
         Organization organization = Organization.builder()
                 .name(request.getName().trim())
+                .email(request.getEmail().trim())
                 .password(passwordEncoder.encode(request.getPassword()))
+                .expireAt(request.getExpireAt())
+                .status(request.getStatus() != null && !request.getStatus().isBlank() 
+                        ? request.getStatus().trim() 
+                        : OrganizationStatus.ACTIVE)
                 .build();
 
         organization = organizationRepository.save(organization);
@@ -65,7 +79,7 @@ public class OrganizationService {
             throw new IllegalArgumentException("Password is required for update");
         }
 
-        Organization organization = organizationRepository.findByCode(request.getCode())
+        Organization organization = organizationRepository.findByCode(request.getCode().trim())
                 .orElseThrow(() -> {
                     log.warn("Update failed — organization not found: code={}", request.getCode());
                     return new IllegalArgumentException("Organization not found with code: " + request.getCode());
@@ -77,11 +91,34 @@ public class OrganizationService {
         }
 
         if (request.getName() != null && !request.getName().isBlank()) {
-            organization.setName(request.getName().trim());
+            String newName = request.getName().trim();
+            if (!newName.equalsIgnoreCase(organization.getName())) {
+                if (organizationRepository.existsByName(newName)) {
+                    log.warn("Organization update failed — name already in use: {}", newName);
+                    throw new IllegalArgumentException("Organization already exists with name: " + newName);
+                }
+                organization.setName(newName);
+            }
+        }
+        if (request.getEmail() != null && !request.getEmail().isBlank()) {
+            String newEmail = request.getEmail().trim();
+            if (!newEmail.equalsIgnoreCase(organization.getEmail())) {
+                if (organizationRepository.existsByEmail(newEmail)) {
+                    log.warn("Organization update failed — email already in use: {}", newEmail);
+                    throw new IllegalArgumentException("Organization already exists with email: " + newEmail);
+                }
+                organization.setEmail(newEmail);
+            }
         }
         if (request.getNewPassword() != null && !request.getNewPassword().isBlank()) {
             organization.setPassword(passwordEncoder.encode(request.getNewPassword()));
             log.debug("Password updated for organization: code={}", request.getCode());
+        }
+        if (request.getStatus() != null && !request.getStatus().isBlank()) {
+            organization.setStatus(request.getStatus().trim());
+        }
+        if (request.getExpireAt() != null) {
+            organization.setExpireAt(request.getExpireAt());
         }
 
         organization = organizationRepository.save(organization);
@@ -109,13 +146,13 @@ public class OrganizationService {
         return toInternalDto(organization);
     }
 
-    public OrganizationInternalDto getByNameForAuth(String name) {
-        log.debug("Auth lookup for organization: name={}", name);
-        Organization organization = organizationRepository.findByNameIgnoreCase(name.trim())
-                .or(() -> organizationRepository.findByName(name.trim()))
+    public OrganizationInternalDto getByEmailForAuth(String email) {
+        log.debug("Auth lookup for organization: email={}", email);
+        Organization organization = organizationRepository.findByEmailIgnoreCase(email.trim())
+                .or(() -> organizationRepository.findByEmail(email.trim()))
                 .orElseThrow(() -> {
-                    log.warn("Auth lookup failed — organization not found: name={}", name);
-                    return new IllegalArgumentException("Organization not found with name: " + name);
+                    log.warn("Auth lookup failed — organization not found: email={}", email);
+                    return new IllegalArgumentException("Organization not found with email: " + email);
                 });
         return toInternalDto(organization);
     }
@@ -123,11 +160,11 @@ public class OrganizationService {
     public OrganizationInternalDto getByIdentifierForAuth(String identifier) {
         log.debug("Auth lookup for organization: identifier={}", identifier);
         Organization organization = organizationRepository.findByCode(identifier.trim())
-                .or(() -> organizationRepository.findByNameIgnoreCase(identifier.trim()))
-                .or(() -> organizationRepository.findByName(identifier.trim()))
+                .or(() -> organizationRepository.findByEmailIgnoreCase(identifier.trim()))
+                .or(() -> organizationRepository.findByEmail(identifier.trim()))
                 .orElseThrow(() -> {
-                    log.warn("Auth lookup failed — organization not found with code or name: {}", identifier);
-                    return new IllegalArgumentException("Organization not found with code or name: " + identifier);
+                    log.warn("Auth lookup failed — organization not found with code or email: {}", identifier);
+                    return new IllegalArgumentException("Organization not found with code or email: " + identifier);
                 });
         return toInternalDto(organization);
     }
@@ -137,9 +174,11 @@ public class OrganizationService {
                 .id(organization.getId())
                 .name(organization.getName())
                 .code(organization.getCode())
+                .email(organization.getEmail())
                 .password(organization.getPassword())
                 .status(organization.getStatus())
-                .expiryAt(organization.getExpiryAt())
+                .createdAt(organization.getCreatedAt())
+                .expireAt(organization.getExpireAt())
                 .build();
     }
 
@@ -159,8 +198,10 @@ public class OrganizationService {
         return OrganizationResponse.builder()
                 .name(organization.getName())
                 .code(organization.getCode())
+                .email(organization.getEmail())
                 .status(organization.getStatus())
                 .createdAt(organization.getCreatedAt())
+                .expireAt(organization.getExpireAt())
                 .build();
     }
 }

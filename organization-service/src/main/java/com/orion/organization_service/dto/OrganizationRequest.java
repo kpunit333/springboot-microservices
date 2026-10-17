@@ -1,5 +1,7 @@
 package com.orion.organization_service.dto;
 
+import java.time.OffsetDateTime;
+
 import com.fasterxml.jackson.annotation.JsonAlias;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,6 +16,9 @@ public class OrganizationRequest {
 
     /** Required for CREATE — the organization name. Optional for UPDATE. */
     private String name;
+
+    /** Required for CREATE — the organization email. Optional for UPDATE. */
+    private String email;
 
     /**
      * Required for CREATE (raw password).
@@ -33,4 +38,9 @@ public class OrganizationRequest {
      */
     @JsonAlias({"organizationCode", "organization_code"})
     private String code;
+
+    private String status;
+
+    @JsonAlias({"expire_at", "expireAt"})
+    private OffsetDateTime expireAt;
 }

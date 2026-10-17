@@ -16,9 +16,15 @@ public interface OrganizationRepository extends JpaRepository<Organization, Long
 
     Optional<Organization> findByNameIgnoreCase(String name);
 
+    Optional<Organization> findByEmail(String email);
+
+    Optional<Organization> findByEmailIgnoreCase(String email);
+
     boolean existsByName(String name);
 
     boolean existsByCode(String code);
+
+    boolean existsByEmail(String email);
 
     void deleteByCode(String code);
 }

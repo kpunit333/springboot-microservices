@@ -15,5 +15,7 @@ public class OrgProfileDto {
 
     private String code;
 
+    private String email;
+
     private String status;
 }

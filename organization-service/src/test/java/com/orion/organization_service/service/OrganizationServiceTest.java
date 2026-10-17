@@ -41,10 +41,12 @@ class OrganizationServiceTest {
     void testCreateOrganizationSuccess() {
         OrganizationRequest request = OrganizationRequest.builder()
                 .name("Acme Corp")
+                .email("admin@acme.com")
                 .password("plainSecret")
                 .build();
 
         when(organizationRepository.existsByName("Acme Corp")).thenReturn(false);
+        when(organizationRepository.existsByEmail("admin@acme.com")).thenReturn(false);
         when(passwordEncoder.encode("plainSecret")).thenReturn("encodedSecret");
         when(organizationRepository.save(any(Organization.class))).thenAnswer(inv -> {
             Organization org = inv.getArgument(0);
@@ -57,6 +59,7 @@ class OrganizationServiceTest {
 
         assertNotNull(response);
         assertEquals("Acme Corp", response.getName());
+        assertEquals("admin@acme.com", response.getEmail());
         assertNotNull(response.getCode());
         assertTrue(response.getCode().startsWith("ORG"));
         verify(passwordEncoder).encode("plainSecret");
@@ -66,18 +69,30 @@ class OrganizationServiceTest {
     void testCreateOrganizationValidationFailures() {
         // Missing name
         assertThrows(IllegalArgumentException.class, () -> 
-            organizationService.create(OrganizationRequest.builder().password("secret").build())
+            organizationService.create(OrganizationRequest.builder().email("admin@acme.com").password("secret").build())
+        );
+
+        // Missing email
+        assertThrows(IllegalArgumentException.class, () -> 
+            organizationService.create(OrganizationRequest.builder().name("Acme").password("secret").build())
         );
 
         // Missing password
         assertThrows(IllegalArgumentException.class, () -> 
-            organizationService.create(OrganizationRequest.builder().name("Acme").build())
+            organizationService.create(OrganizationRequest.builder().name("Acme").email("admin@acme.com").build())
         );
 
         // Duplicate name
         when(organizationRepository.existsByName("Acme")).thenReturn(true);
         assertThrows(IllegalArgumentException.class, () -> 
-            organizationService.create(OrganizationRequest.builder().name("Acme").password("secret").build())
+            organizationService.create(OrganizationRequest.builder().name("Acme").email("admin@acme.com").password("secret").build())
+        );
+
+        // Duplicate email
+        when(organizationRepository.existsByName("Unique Name")).thenReturn(false);
+        when(organizationRepository.existsByEmail("duplicate@acme.com")).thenReturn(true);
+        assertThrows(IllegalArgumentException.class, () -> 
+            organizationService.create(OrganizationRequest.builder().name("Unique Name").email("duplicate@acme.com").password("secret").build())
         );
     }
 
@@ -86,6 +101,7 @@ class OrganizationServiceTest {
         Organization org = Organization.builder()
                 .id(10L)
                 .name("Old Name")
+                .email("old@acme.com")
                 .code("ORG123")
                 .password("encodedSecret")
                 .build();
@@ -99,12 +115,14 @@ class OrganizationServiceTest {
                 .code("ORG123")
                 .password("currentSecret")
                 .name("New Name")
+                .email("new@acme.com")
                 .newPassword("newSecret")
                 .build();
 
         OrganizationResponse response = organizationService.update(request);
 
         assertEquals("New Name", response.getName());
+        assertEquals("new@acme.com", response.getEmail());
         assertEquals("ORG123", response.getCode());
         verify(passwordEncoder).matches("currentSecret", "encodedSecret");
         verify(passwordEncoder).encode("newSecret");
@@ -115,6 +133,7 @@ class OrganizationServiceTest {
         Organization org = Organization.builder()
                 .id(10L)
                 .name("Acme")
+                .email("admin@acme.com")
                 .code("ORG123")
                 .password("encodedSecret")
                 .build();
@@ -132,39 +151,64 @@ class OrganizationServiceTest {
     }
 
     @Test
-    void testGetByNameForAuthSuccess() {
+    void testGetByEmailForAuthSuccess() {
         Organization org = Organization.builder()
                 .id(10L)
                 .name("Acme Corp")
+                .email("admin@acme.com")
                 .code("ORG123")
                 .password("encodedSecret")
                 .status("ACTIVE")
                 .build();
 
-        when(organizationRepository.findByNameIgnoreCase("Acme Corp")).thenReturn(Optional.of(org));
+        when(organizationRepository.findByEmailIgnoreCase("admin@acme.com")).thenReturn(Optional.of(org));
 
-        var dto = organizationService.getByNameForAuth("Acme Corp");
+        var dto = organizationService.getByEmailForAuth("admin@acme.com");
         assertNotNull(dto);
         assertEquals("ORG123", dto.getCode());
         assertEquals("Acme Corp", dto.getName());
+        assertEquals("admin@acme.com", dto.getEmail());
     }
 
     @Test
-    void testGetByIdentifierForAuthByName() {
+    void testGetByIdentifierForAuthByCode() {
         Organization org = Organization.builder()
                 .id(10L)
                 .name("Acme Corp")
+                .email("admin@acme.com")
                 .code("ORG123")
                 .password("encodedSecret")
                 .status("ACTIVE")
                 .build();
 
-        when(organizationRepository.findByCode("Acme Corp")).thenReturn(Optional.empty());
-        when(organizationRepository.findByNameIgnoreCase("Acme Corp")).thenReturn(Optional.of(org));
+        when(organizationRepository.findByCode("ORG123")).thenReturn(Optional.of(org));
 
-        var dto = organizationService.getByIdentifierForAuth("Acme Corp");
+        var dto = organizationService.getByIdentifierForAuth("ORG123");
         assertNotNull(dto);
         assertEquals("ORG123", dto.getCode());
         assertEquals("Acme Corp", dto.getName());
+        assertEquals("admin@acme.com", dto.getEmail());
+    }
+
+    @Test
+    void testGetByIdentifierForAuthByEmail() {
+        Organization org = Organization.builder()
+                .id(10L)
+                .name("Acme Corp")
+                .email("admin@acme.com")
+                .code("ORG123")
+                .password("encodedSecret")
+                .status("ACTIVE")
+                .build();
+
+        when(organizationRepository.findByCode("admin@acme.com")).thenReturn(Optional.empty());
+        when(organizationRepository.findByNameIgnoreCase("admin@acme.com")).thenReturn(Optional.empty());
+        when(organizationRepository.findByName("admin@acme.com")).thenReturn(Optional.empty());
+        when(organizationRepository.findByEmailIgnoreCase("admin@acme.com")).thenReturn(Optional.of(org));
+
+        var dto = organizationService.getByIdentifierForAuth("admin@acme.com");
+        assertNotNull(dto);
+        assertEquals("ORG123", dto.getCode());
+        assertEquals("admin@acme.com", dto.getEmail());
     }
 }

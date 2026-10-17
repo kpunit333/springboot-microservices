@@ -33,7 +33,7 @@ public class OrganizationController {
 
     /**
      * GET /api/organizations/internal/v1/organization/{identifier}
-     * Used by the API Gateway to load org credentials by code or name during login/token refresh.
+     * Used by the API Gateway to load org credentials by code or email during login/token refresh.
      */
     @GetMapping("/organization/{identifier}")
     @ResponseStatus(HttpStatus.OK)
@@ -43,13 +43,13 @@ public class OrganizationController {
     }
 
     /**
-     * GET /api/organizations/internal/v1/organization/by-name/{name}
-     * Used by the API Gateway to load org credentials explicitly by organization name.
+     * GET /api/organizations/internal/v1/organization/by-email/{email}
+     * Used by the API Gateway to load org credentials explicitly by organization email.
      */
-    @GetMapping("/organization/by-name/{name}")
+    @GetMapping("/organization/by-email/{email}")
     @ResponseStatus(HttpStatus.OK)
-    public OrganizationInternalDto getByNameForAuth(@PathVariable String name) {
-        log.debug("Internal auth lookup for organization name: {}", name);
-        return organizationService.getByNameForAuth(name);
+    public OrganizationInternalDto getByEmailForAuth(@PathVariable String email) {
+        log.debug("Internal auth lookup for organization email: {}", email);
+        return organizationService.getByEmailForAuth(email);
     }
 }

@@ -1,6 +1,6 @@
 package com.orion.organization_service.model;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 import com.orion.organization_service.constant.OrganizationStatus;
 import com.orion.organization_service.util.CodeGenerator;
@@ -37,17 +37,20 @@ public class Organization {
     @Column(name = "code", length = 18, nullable = false, unique = true, updatable = false)
     private String code;
 
-    @Column(name = "password", length = 100, nullable = false)
+    @Column(name = "password", length = 255, nullable = false)
     private String password;
+
+    @Column(name = "email", length = 255, nullable = false)
+    private String email;
 
     @Builder.Default
     @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private OffsetDateTime createdAt = OffsetDateTime.now();
 
-    @Column(name = "expiry_at")
-    private LocalDateTime expiryAt;
+    @Column(name = "expire_at")
+    private OffsetDateTime expireAt;
 
-    @Column(name = "status", columnDefinition = "text")
+    @Column(name = "status", length = 15)
     @Builder.Default
     private String status = OrganizationStatus.ACTIVE;
     

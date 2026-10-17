@@ -97,12 +97,12 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public AuthResponse loginOrganization(OrganizationLoginRequest request) {
         String code = request.getCode() != null ? request.getCode().trim() : null;
-        String name = request.getName() != null ? request.getName().trim() : null;
+        String email = request.getEmail() != null ? request.getEmail().trim() : null;
 
-        log.info("Processing organization login for code='{}', name='{}'", code, name);
+        log.info("Processing organization login for code='{}', email='{}'", code, email);
 
-        if ((code == null || code.isBlank()) && (name == null || name.isBlank())) {
-            throw new InvalidCredentialsException("Either organization code or name must be provided");
+        if ((code == null || code.isBlank()) && (email == null || email.isBlank())) {
+            throw new InvalidCredentialsException("Either organization code or email must be provided");
         }
 
         OrgInternalDto org = null;
@@ -115,18 +115,18 @@ public class AuthServiceImpl implements AuthService {
             }
         }
 
-        // 2. If not matched yet and name is provided, check if organization exists and password matches
-        if (org == null && name != null && !name.isBlank()) {
-            Optional<OrgInternalDto> byName = organizationServiceClient.getOrganizationByName(name);
-            if (byName.isPresent() && passwordEncoder.matches(request.getPassword(), byName.get().getPassword())) {
-                org = byName.get();
+        // 2. If not matched yet and email is provided, check if organization exists and password matches
+        if (org == null && email != null && !email.isBlank()) {
+            Optional<OrgInternalDto> byEmail = organizationServiceClient.getOrganizationByEmail(email);
+            if (byEmail.isPresent() && passwordEncoder.matches(request.getPassword(), byEmail.get().getPassword())) {
+                org = byEmail.get();
             }
         }
 
         // 3. If neither matched with correct password
         if (org == null) {
-            log.warn("Organization login failed: no matching organization for code='{}' or name='{}' with valid password", code, name);
-            throw new InvalidCredentialsException("Invalid organization code/name or password");
+            log.warn("Organization login failed: no matching organization for code='{}' or email='{}' with valid password", code, email);
+            throw new InvalidCredentialsException("Invalid organization code/email or password");
         }
 
         // Build token claims
@@ -144,6 +144,7 @@ public class AuthServiceImpl implements AuthService {
         OrgProfileDto profile = OrgProfileDto.builder()
                 .name(org.getName())
                 .code(org.getCode())
+                .email(org.getEmail())
                 .status(org.getStatus())
                 .build();
 

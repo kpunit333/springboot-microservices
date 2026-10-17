@@ -24,4 +24,7 @@ public class JwtProperties {
      * Refresh token validity in milliseconds (default 7 days = 604800000ms).
      */
     private long refreshTokenExpiration = 604800000L;
+
+    public JwtProperties() {
+    }
 }

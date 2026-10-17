@@ -27,6 +27,23 @@ public class OrganizationServiceClient {
         return getOrganizationByIdentifier(code);
     }
 
+    public Optional<OrgInternalDto> getOrganizationByEmail(String email) {
+        try {
+            OrgInternalDto org = restClient.get()
+                    .uri("/api/organizations/internal/v1/organization/by-email/{email}", email)
+                    .retrieve()
+                    .onStatus(HttpStatusCode::is4xxClientError, (request, response) -> {
+                        log.warn("Organization service returned {} for email: {}", response.getStatusCode(), email);
+                    })
+                    .body(OrgInternalDto.class);
+
+            return Optional.ofNullable(org);
+        } catch (Exception e) {
+            log.error("Error communicating with organization-service for email '{}': {}", email, e.getMessage());
+            return Optional.empty();
+        }
+    }
+
     public Optional<OrgInternalDto> getOrganizationByName(String name) {
         try {
             OrgInternalDto org = restClient.get()

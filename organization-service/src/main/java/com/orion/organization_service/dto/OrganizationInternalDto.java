@@ -1,6 +1,6 @@
 package com.orion.organization_service.dto;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -19,9 +19,13 @@ public class OrganizationInternalDto {
 
     private String code;
 
+    private String email;
+
     private String password;
 
     private String status;
 
-    private LocalDateTime expiryAt;
+    private OffsetDateTime createdAt;
+
+    private OffsetDateTime expireAt;
 }

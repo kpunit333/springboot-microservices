@@ -126,6 +126,7 @@ class AuthServiceTest {
                 .id(10L)
                 .name("Accenture")
                 .code("ORG1001")
+                .email("admin@accenture.com")
                 .password("org_pass")
                 .status("ACTIVE")
                 .build();
@@ -144,22 +145,23 @@ class AuthServiceTest {
     }
 
     @Test
-    void testOrganizationLoginSuccessByNameOnly() {
+    void testOrganizationLoginSuccessByEmailOnly() {
         OrgInternalDto org = OrgInternalDto.builder()
                 .id(10L)
                 .name("Accenture")
                 .code("ORG1001")
+                .email("admin@accenture.com")
                 .password("org_pass")
                 .status("ACTIVE")
                 .build();
 
-        when(organizationServiceClient.getOrganizationByName("Accenture")).thenReturn(Optional.of(org));
+        when(organizationServiceClient.getOrganizationByEmail("admin@accenture.com")).thenReturn(Optional.of(org));
         when(jwtService.generateAccessToken(eq("10"), anyMap())).thenReturn("org_access_token");
         when(jwtService.generateRefreshToken(eq("10"), anyMap())).thenReturn("org_refresh_token");
         when(jwtService.getAccessTokenExpirationMillis()).thenReturn(900000L);
 
         OrganizationLoginRequest request = OrganizationLoginRequest.builder()
-                .name("Accenture")
+                .email("admin@accenture.com")
                 .password("org_pass")
                 .build();
         AuthResponse response = authService.loginOrganization(request);
@@ -170,24 +172,25 @@ class AuthServiceTest {
     }
 
     @Test
-    void testOrganizationLoginSuccessWithBothCodeAndName_FallbackToName() {
+    void testOrganizationLoginSuccessWithBothCodeAndEmail_FallbackToEmail() {
         OrgInternalDto org = OrgInternalDto.builder()
                 .id(10L)
                 .name("Accenture")
                 .code("ORG1001")
+                .email("admin@accenture.com")
                 .password("org_pass")
                 .status("ACTIVE")
                 .build();
 
         when(organizationServiceClient.getOrganizationByCode("WRONG_CODE")).thenReturn(Optional.empty());
-        when(organizationServiceClient.getOrganizationByName("Accenture")).thenReturn(Optional.of(org));
+        when(organizationServiceClient.getOrganizationByEmail("admin@accenture.com")).thenReturn(Optional.of(org));
         when(jwtService.generateAccessToken(eq("10"), anyMap())).thenReturn("org_access_token");
         when(jwtService.generateRefreshToken(eq("10"), anyMap())).thenReturn("org_refresh_token");
         when(jwtService.getAccessTokenExpirationMillis()).thenReturn(900000L);
 
         OrganizationLoginRequest request = OrganizationLoginRequest.builder()
                 .code("WRONG_CODE")
-                .name("Accenture")
+                .email("admin@accenture.com")
                 .password("org_pass")
                 .build();
         AuthResponse response = authService.loginOrganization(request);
@@ -200,11 +203,11 @@ class AuthServiceTest {
     @Test
     void testOrganizationLoginFailureWhenNeitherMatches() {
         when(organizationServiceClient.getOrganizationByCode("WRONG_CODE")).thenReturn(Optional.empty());
-        when(organizationServiceClient.getOrganizationByName("WRONG_NAME")).thenReturn(Optional.empty());
+        when(organizationServiceClient.getOrganizationByEmail("wrong@accenture.com")).thenReturn(Optional.empty());
 
         OrganizationLoginRequest request = OrganizationLoginRequest.builder()
                 .code("WRONG_CODE")
-                .name("WRONG_NAME")
+                .email("wrong@accenture.com")
                 .password("org_pass")
                 .build();
 

@@ -25,3 +25,7 @@ spring.cloud.gateway.server.webmvc.routes[2].predicates[0]=Path=/api/otp/**
 jwt.secret=${JWT_SECRET:your_base64_encoded_jwt_secret_key_minimum_256_bits_here}
 jwt.access-token-expiration=${JWT_ACCESS_EXPIRATION:900000}
 jwt.refresh-token-expiration=${JWT_REFRESH_EXPIRATION:604800000}
+
+# ─── IP & Origin Whitelist ─────────────────────────────────────────────────────
+gateway.whitelist.enabled=true
+gateway.whitelist.ips=${GATEWAY_WHITELIST_IPS:127.0.0.1:3000,127.0.0.1,::1,0:0:0:0:0:0:0:1,localhost:3000,localhost}

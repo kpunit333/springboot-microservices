@@ -1,6 +1,6 @@
 package com.orion.organization_service.dto;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -17,7 +17,11 @@ public class OrganizationResponse {
 
     private String code;
 
+    private String email;
+
     private String status;
 
-    private LocalDateTime createdAt;
+    private OffsetDateTime createdAt;
+
+    private OffsetDateTime expireAt;
 }

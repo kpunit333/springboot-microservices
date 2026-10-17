@@ -17,17 +17,17 @@ public class OrganizationLoginRequest {
 
     /**
      * Organization unique code (e.g. ORG04A07EAT0F2482).
-     * Optional if organization name is provided.
+     * Optional if organization email is provided.
      */
     @JsonAlias({"organizationCode", "organization_code"})
     private String code;
 
     /**
-     * Organization name (e.g. pwc, Acme Corp).
+     * Organization email (e.g. admin@acme.com).
      * Optional if organization code is provided.
      */
-    @JsonAlias({"organizationName", "organization_name"})
-    private String name;
+    @JsonAlias({"organizationEmail", "organization_email"})
+    private String email;
 
     @NotBlank(message = "Password is required")
     private String password;
@@ -37,8 +37,8 @@ public class OrganizationLoginRequest {
         this.password = password;
     }
 
-    @AssertTrue(message = "Either organization code or organization name must be provided")
-    public boolean isCodeOrNamePresent() {
-        return (code != null && !code.isBlank()) || (name != null && !name.isBlank());
+    @AssertTrue(message = "Either organization code or email must be provided")
+    public boolean isCodeOrEmailPresent() {
+        return (code != null && !code.isBlank()) || (email != null && !email.isBlank());
     }
 }
