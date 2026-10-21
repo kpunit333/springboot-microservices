@@ -17,6 +17,10 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
 
     void deleteByCode(String code);
 
+    Optional<Project> findBySecretKey(java.util.UUID secretKey);
+
+    boolean existsBySecretKey(java.util.UUID secretKey);
+
     List<Project> findByOrganizationId(Long organizationId);
 
     Optional<Project> findByCodeAndOrganizationId(String code, Long organizationId);

@@ -251,6 +251,24 @@ public class ProjectService {
         return this.mapToResponse(project);
     }
 
+    public boolean validateProject(String identifier) {
+        if (identifier == null || identifier.isBlank()) {
+            return false;
+        }
+        Optional<Project> opt = findProjectByIdentifier(identifier.trim());
+        if (opt.isEmpty()) {
+            return false;
+        }
+        Project project = opt.get();
+        if (project.getExpireAt() != null && project.getExpireAt().isBefore(java.time.OffsetDateTime.now())) {
+            return false;
+        }
+        if (project.getStatus() != null && !OrganizationStatus.ACTIVE.equalsIgnoreCase(project.getStatus())) {
+            return false;
+        }
+        return true;
+    }
+
     public ProjectResponse getByIdentifier(String identifier) {
         log.debug("Looking up project: {}", identifier);
         Project project = findProjectByIdentifier(identifier)
@@ -296,16 +314,32 @@ public class ProjectService {
                 });
     }
 
-    private Optional<Project> findProjectByIdentifier(String identifier) {
+    public Optional<Project> findProjectByIdentifier(String identifier) {
         if (identifier == null || identifier.isBlank()) {
             return Optional.empty();
         }
-        Optional<Project> byCode = projectRepository.findByCode(identifier);
+        String trimmed = identifier.trim();
+
+        // 1. Check if identifier is a UUID secretKey
+        try {
+            java.util.UUID secretKey = java.util.UUID.fromString(trimmed);
+            Optional<Project> bySecretKey = projectRepository.findBySecretKey(secretKey);
+            if (bySecretKey.isPresent()) {
+                return bySecretKey;
+            }
+        } catch (IllegalArgumentException ignored) {
+            // Not a valid UUID string, proceed to code/id lookup
+        }
+
+        // 2. Check by project code
+        Optional<Project> byCode = projectRepository.findByCode(trimmed);
         if (byCode.isPresent()) {
             return byCode;
         }
+
+        // 3. Check by numeric ID
         try {
-            Long id = Long.parseLong(identifier);
+            Long id = Long.parseLong(trimmed);
             return projectRepository.findById(id);
         } catch (NumberFormatException e) {
             return Optional.empty();

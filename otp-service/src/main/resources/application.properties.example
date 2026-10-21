@@ -6,3 +6,13 @@ eureka.client.register-with-eureka=true
 eureka.client.fetch-registry=true
 eureka.instance.prefer-ip-address=true
 eureka.instance.instance-id=${spring.application.name}:${server.port}
+
+# ─── Upstash Redis REST Configuration ─────────────────────────────────────────
+upstash.redis.rest.url=${UPSTASH_REDIS_REST_URL:https://fast-monitor-176817.upstash.io}
+upstash.redis.rest.token=${UPSTASH_REDIS_REST_TOKEN:your_upstash_redis_rest_token_here}
+
+# ─── OTP Lifecycle & Validation Settings ───────────────────────────────────────
+otp.ttl.seconds=${OTP_TTL_SECONDS:300}
+otp.validation.project-purpose.enabled=${OTP_VALIDATE_PROJECT_PURPOSE:true}
+otp.validation.strict=${OTP_VALIDATION_STRICT:false}
+

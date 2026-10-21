@@ -145,6 +145,37 @@ public class PurposeService {
         log.info("Purpose deleted: code={}, organizationCode={}", purposeCode, organizationCode);
     }
 
+    public java.util.Optional<Purpose> findPurposeByIdentifier(String identifier) {
+        if (identifier == null || identifier.isBlank()) {
+            return java.util.Optional.empty();
+        }
+        java.util.Optional<Purpose> byCode = purposeRepository.findByCode(identifier.trim());
+        if (byCode.isPresent()) {
+            return byCode;
+        }
+        try {
+            Long id = Long.parseLong(identifier.trim());
+            return purposeRepository.findById(id);
+        } catch (NumberFormatException e) {
+            return java.util.Optional.empty();
+        }
+    }
+
+    public boolean validatePurpose(String identifier) {
+        if (identifier == null || identifier.isBlank()) {
+            return false;
+        }
+        java.util.Optional<Purpose> opt = findPurposeByIdentifier(identifier.trim());
+        if (opt.isEmpty()) {
+            return false;
+        }
+        Purpose purpose = opt.get();
+        if (purpose.getExpireAt() != null && purpose.getExpireAt().isBefore(java.time.OffsetDateTime.now())) {
+            return false;
+        }
+        return true;
+    }
+
     private Organization getOrganizationOrThrow(String organizationCode) {
         if (organizationCode == null || organizationCode.isBlank()) {
             throw new IllegalArgumentException("Organization code is required");

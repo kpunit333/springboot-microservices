@@ -26,6 +26,12 @@ public class OrganizationService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private ProjectService projectService;
+
+    @Autowired
+    private PurposeService purposeService;
+
     public List<OrganizationResponse> getAll() {
         log.debug("Fetching all organizations");
         List<Organization> list = organizationRepository.findAll();
@@ -192,6 +198,83 @@ public class OrganizationService {
                 });
         organizationRepository.deleteByCode(code);
         log.info("Organization deleted: code={}", code);
+    }
+
+
+    public com.orion.organization_service.dto.ValidationResponse validateProjectAndPurpose(String secretKey, String purposeId) {
+        if (secretKey == null || secretKey.isBlank()) {
+            return com.orion.organization_service.dto.ValidationResponse.builder()
+                    .valid(false)
+                    .message("Secret key is required")
+                    .build();
+        }
+        if (purposeId == null || purposeId.isBlank()) {
+            return com.orion.organization_service.dto.ValidationResponse.builder()
+                    .valid(false)
+                    .message("Purpose ID is required")
+                    .build();
+        }
+
+        try {
+            java.util.Optional<com.orion.organization_service.model.Project> projectOpt = 
+                    projectService.findProjectByIdentifier(secretKey.trim());
+            if (projectOpt.isEmpty()) {
+                return com.orion.organization_service.dto.ValidationResponse.builder()
+                        .valid(false)
+                        .message("Project not found with secret key: " + secretKey)
+                        .build();
+            }
+            com.orion.organization_service.model.Project project = projectOpt.get();
+            if (project.getExpireAt() != null && project.getExpireAt().isBefore(java.time.OffsetDateTime.now())) {
+                return com.orion.organization_service.dto.ValidationResponse.builder()
+                        .valid(false)
+                        .message("Project has expired: " + secretKey)
+                        .build();
+            }
+            if (project.getStatus() != null && !OrganizationStatus.ACTIVE.equalsIgnoreCase(project.getStatus())) {
+                return com.orion.organization_service.dto.ValidationResponse.builder()
+                        .valid(false)
+                        .message("Project is not active: " + secretKey)
+                        .build();
+            }
+
+            java.util.Optional<com.orion.organization_service.model.Purpose> purposeOpt = 
+                    purposeService.findPurposeByIdentifier(purposeId.trim());
+            if (purposeOpt.isEmpty()) {
+                return com.orion.organization_service.dto.ValidationResponse.builder()
+                        .valid(false)
+                        .message("Purpose not found with identifier: " + purposeId)
+                        .build();
+            }
+            com.orion.organization_service.model.Purpose purpose = purposeOpt.get();
+            if (purpose.getExpireAt() != null && purpose.getExpireAt().isBefore(java.time.OffsetDateTime.now())) {
+                return com.orion.organization_service.dto.ValidationResponse.builder()
+                        .valid(false)
+                        .message("Purpose has expired: " + purposeId)
+                        .build();
+            }
+
+            if (!java.util.Objects.equals(project.getOrganizationId(), purpose.getOrganizationId())) {
+                return com.orion.organization_service.dto.ValidationResponse.builder()
+                        .valid(false)
+                        .message("Project and purpose do not belong to the same organization")
+                        .build();
+            }
+
+            return com.orion.organization_service.dto.ValidationResponse.builder()
+                    .valid(true)
+                    .message("Project and purpose are valid and belong to the same organization")
+                    .organizationId(project.getOrganizationId())
+                    .secretKey(project.getSecretKey() != null ? project.getSecretKey().toString() : null)
+                    .build();
+        } catch (Exception e) {
+            log.error("Error during project and purpose validation for secretKey='{}', purposeId='{}': {}",
+                    secretKey, purposeId, e.getMessage(), e);
+            return com.orion.organization_service.dto.ValidationResponse.builder()
+                    .valid(false)
+                    .message("Validation error: " + e.getMessage())
+                    .build();
+        }
     }
 
     public OrganizationResponse mapToResponse(Organization organization) {
