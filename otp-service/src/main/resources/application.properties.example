@@ -15,4 +15,6 @@ upstash.redis.rest.token=${UPSTASH_REDIS_REST_TOKEN:your_upstash_redis_rest_toke
 otp.ttl.seconds=${OTP_TTL_SECONDS:300}
 otp.validation.project-purpose.enabled=${OTP_VALIDATE_PROJECT_PURPOSE:true}
 otp.validation.strict=${OTP_VALIDATION_STRICT:false}
-
+# ─── Allowed IPs Configuration ───────────────────────────────────────────────
+otp.allowed-ips.enabled=${OTP_ALLOWED_IPS_ENABLED:true}
+otp.allowed-ips.ips=${OTP_ALLOWED_IPS:127.0.0.1,::1,0:0:0:0:0:0:0:1,localhost}
