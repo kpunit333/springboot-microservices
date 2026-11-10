@@ -43,7 +43,8 @@ public class OtpGenerateRequest {
 
     /**
      * Optional dispatch mode override: "WAY_1", "WAY_2", or "BOTH".
-     * If not provided, defaults to notification.service.dispatch-mode configuration.
+     * If not provided, defaults to notification.service.dispatch-mode
+     * configuration.
      */
     @JsonProperty("dispatchMode")
     @JsonAlias({ "dispatchMode", "dispatch_mode", "way" })

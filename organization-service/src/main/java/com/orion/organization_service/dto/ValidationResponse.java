@@ -19,6 +19,10 @@ public class ValidationResponse {
 
     private String secretKey;
 
+    private String projectName;
+
+    private String purposeName;
+
     private java.util.List<String> channels;
 }
 

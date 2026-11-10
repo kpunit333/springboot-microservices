@@ -8,6 +8,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -15,6 +16,7 @@ import org.springframework.web.client.RestClient;
 
 import com.orion.otp_service.config.NotificationProperties;
 import com.orion.otp_service.dto.OtpUserDto;
+import com.orion.otp_service.template.OtpNotificationTemplate;
 import com.orion.otp_service.util.PhoneUtils;
 
 import lombok.extern.slf4j.Slf4j;
@@ -42,9 +44,16 @@ public class NotificationProducerService {
 
     private final RestClient restClient;
     private final NotificationProperties properties;
+    private final OtpNotificationTemplate otpNotificationTemplate;
 
-    public NotificationProducerService(RestClient.Builder restClientBuilder, NotificationProperties properties) {
+    @Autowired
+    public NotificationProducerService(
+            RestClient.Builder restClientBuilder,
+            NotificationProperties properties,
+            @Autowired(required = false) OtpNotificationTemplate otpNotificationTemplate) {
         this.properties = properties;
+        this.otpNotificationTemplate = otpNotificationTemplate != null ? otpNotificationTemplate
+                : new OtpNotificationTemplate();
 
         String auth = properties.getUsername() + ":" + properties.getPassword();
         String encodedAuth = Base64.getEncoder().encodeToString(auth.getBytes(StandardCharsets.UTF_8));
@@ -57,6 +66,10 @@ public class NotificationProducerService {
                 .build();
     }
 
+    public NotificationProducerService(RestClient.Builder restClientBuilder, NotificationProperties properties) {
+        this(restClientBuilder, properties, new com.orion.otp_service.template.OtpNotificationTemplate());
+    }
+
     /**
      * Way 2: Produces notifications for all subscribed channels with formatted receiver and payload.
      */
@@ -67,10 +80,39 @@ public class NotificationProducerService {
             String purposeId,
             String otp,
             long expiresInSeconds) {
+        return dispatchToChannels(channels, secretKey, null, null, user, purposeId, otp, expiresInSeconds);
+    }
 
-        String title = "OTP Verification";
-        long minutes = Math.max(1, expiresInSeconds / 60);
-        String description = "Your OTP is " + otp + ". Valid for " + minutes + " minutes.";
+    /**
+     * Way 2: Produces notifications for all subscribed channels mentioning project name.
+     */
+    public List<String> dispatchToChannels(
+            List<String> channels,
+            String secretKey,
+            String projectName,
+            OtpUserDto user,
+            String purposeId,
+            String otp,
+            long expiresInSeconds) {
+        return dispatchToChannels(channels, secretKey, projectName, null, user, purposeId, otp, expiresInSeconds);
+    }
+
+    /**
+     * Way 2: Produces notifications for all subscribed channels mentioning purpose in title,
+     * and purpose name, project name, and OTP in description.
+     */
+    public List<String> dispatchToChannels(
+            List<String> channels,
+            String secretKey,
+            String projectName,
+            String purposeName,
+            OtpUserDto user,
+            String purposeId,
+            String otp,
+            long expiresInSeconds) {
+
+        String title = otpNotificationTemplate.generateTitle(purposeName);
+        String description = otpNotificationTemplate.generateDescription(purposeName, projectName, otp, expiresInSeconds);
 
         return dispatchToChannelsWithContent(channels, user, title, description);
     }

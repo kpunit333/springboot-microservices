@@ -493,6 +493,8 @@ class OtpServiceTest {
                                                 .valid(true)
                                                 .organizationId(1L)
                                                 .secretKey("SEC001")
+                                                .projectName("Orion Portal")
+                                                .purposeName("User Login")
                                                 .message("Valid")
                                                 .channels(List.of("EMAIL", "SMS"))
                                                 .build());
@@ -526,7 +528,7 @@ class OtpServiceTest {
                                 .phone("9876543210")
                                 .countryCode("+91")
                                 .build();
-                verify(notificationServiceClient).sendNotification(eq("SEC001"), eq(expectedDispatchedUser), eq("OTP Verification"),
+                verify(notificationServiceClient).sendNotification(eq("SEC001"), eq(expectedDispatchedUser), eq("User Login - Verification Code"),
                                 anyString(), eq(List.of("EMAIL", "SMS")));
                 verify(notificationService, never()).dispatchToChannelsWithContent(anyList(), any(OtpUserDto.class),
                                 anyString(), anyString());
@@ -543,6 +545,8 @@ class OtpServiceTest {
                                                 .valid(true)
                                                 .organizationId(1L)
                                                 .secretKey("SEC001")
+                                                .projectName("Orion Portal")
+                                                .purposeName("User Login")
                                                 .message("Valid")
                                                 .channels(List.of("EMAIL", "WHATSAPP"))
                                                 .build());
@@ -577,7 +581,7 @@ class OtpServiceTest {
                                 .whatsapp("+919876543210")
                                 .build();
                 verify(notificationService).dispatchToChannelsWithContent(eq(List.of("EMAIL", "WHATSAPP")), eq(expectedDispatchedUser),
-                                eq("OTP Verification"), anyString());
+                                eq("User Login - Verification Code"), anyString());
                 verify(notificationServiceClient, never()).sendNotification(anyString(), any(OtpUserDto.class),
                                 anyString(), anyString(), anyList());
         }
@@ -593,6 +597,8 @@ class OtpServiceTest {
                                                 .valid(true)
                                                 .organizationId(1L)
                                                 .secretKey("SEC001")
+                                                .projectName("Orion Portal")
+                                                .purposeName("User Login")
                                                 .message("Valid")
                                                 .channels(List.of("EMAIL"))
                                                 .build());
@@ -620,10 +626,10 @@ class OtpServiceTest {
 
                 assertNotNull(response);
                 assertEquals(List.of("EMAIL"), response.getChannels());
-                verify(notificationServiceClient).sendNotification(eq("SEC001"), eq(user), eq("OTP Verification"),
+                verify(notificationServiceClient).sendNotification(eq("SEC001"), eq(user), eq("User Login - Verification Code"),
                                 anyString(), eq(List.of("EMAIL")));
                 verify(notificationService).dispatchToChannelsWithContent(eq(List.of("EMAIL")), eq(user),
-                                eq("OTP Verification"), anyString());
+                                eq("User Login - Verification Code"), anyString());
         }
 
         @Test

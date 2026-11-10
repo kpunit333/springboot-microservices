@@ -18,6 +18,7 @@ import com.orion.otp_service.dto.OtpGenerateResponse;
 import com.orion.otp_service.dto.OtpUserDto;
 import com.orion.otp_service.dto.OtpVerifyRequest;
 import com.orion.otp_service.dto.ValidationResponse;
+import com.orion.otp_service.template.OtpNotificationTemplate;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -31,6 +32,7 @@ public class OtpService {
     private final NotificationProducerService notificationProducerService;
     private final NotificationServiceClient notificationServiceClient;
     private final NotificationProperties notificationProperties;
+    private final OtpNotificationTemplate otpNotificationTemplate;
     private final SecureRandom secureRandom = new SecureRandom();
 
     @Autowired
@@ -40,7 +42,8 @@ public class OtpService {
             OtpProperties properties,
             NotificationProducerService notificationProducerService,
             @Autowired(required = false) NotificationServiceClient notificationServiceClient,
-            @Autowired(required = false) NotificationProperties notificationProperties) {
+            @Autowired(required = false) NotificationProperties notificationProperties,
+            @Autowired(required = false) OtpNotificationTemplate otpNotificationTemplate) {
         this.redisService = redisService;
         this.orgClient = orgClient;
         this.properties = properties;
@@ -48,6 +51,19 @@ public class OtpService {
         this.notificationServiceClient = notificationServiceClient;
         this.notificationProperties = notificationProperties != null ? notificationProperties
                 : new NotificationProperties();
+        this.otpNotificationTemplate = otpNotificationTemplate != null ? otpNotificationTemplate
+                : new OtpNotificationTemplate();
+    }
+
+    public OtpService(
+            UpstashRedisService redisService,
+            OrganizationServiceClient orgClient,
+            OtpProperties properties,
+            NotificationProducerService notificationProducerService,
+            NotificationServiceClient notificationServiceClient,
+            NotificationProperties notificationProperties) {
+        this(redisService, orgClient, properties, notificationProducerService, notificationServiceClient,
+                notificationProperties, new OtpNotificationTemplate());
     }
 
     public OtpService(
@@ -55,7 +71,8 @@ public class OtpService {
             OrganizationServiceClient orgClient,
             OtpProperties properties,
             NotificationProducerService notificationProducerService) {
-        this(redisService, orgClient, properties, notificationProducerService, null, new NotificationProperties());
+        this(redisService, orgClient, properties, notificationProducerService, null, new NotificationProperties(),
+                new OtpNotificationTemplate());
     }
 
     /**
@@ -98,6 +115,8 @@ public class OtpService {
         }
 
         String effectiveSecretKey = secretKey;
+        String projectName = null;
+        String purposeName = null;
         List<String> targetChannels;
         boolean filterUser;
 
@@ -107,7 +126,8 @@ public class OtpService {
             try {
                 validation = orgClient.validateProjectAndPurpose(secretKey, purposeId);
             } catch (Exception e) {
-                log.error("Organization service is unavailable or returned an error for secretKey='{}', purposeId='{}': {}",
+                log.error(
+                        "Organization service is unavailable or returned an error for secretKey='{}', purposeId='{}': {}",
                         secretKey, purposeId, e.getMessage());
                 throw new IllegalArgumentException(
                         "Organization service is unavailable. Please try again later.");
@@ -124,17 +144,29 @@ public class OtpService {
             if (validation.getSecretKey() != null) {
                 effectiveSecretKey = validation.getSecretKey();
             }
+            if (validation.getProjectName() != null && !validation.getProjectName().isBlank()) {
+                projectName = validation.getProjectName();
+            }
+            if (validation.getPurposeName() != null && !validation.getPurposeName().isBlank()) {
+                purposeName = validation.getPurposeName();
+            }
             filterUser = true;
-            log.debug("Delivery channels fetched from project table: {} (isTest=false)", targetChannels);
+            log.debug(
+                    "Delivery channels fetched from project table: {}, projectName='{}', purposeName='{}' (isTest=false)",
+                    targetChannels, projectName, purposeName);
         } else {
-            // 1. Test /test/generate: use only valid, non-blank channels specified in the request;
+            // 1. Test /test/generate: use only valid, non-blank channels specified in the
+            // request;
             // if none or blank provided, default to empty list (no dispatch)
             targetChannels = extractChannels(request.getChannels());
             filterUser = false;
-            log.info("Test mode: using channels from request (empty=no dispatch): {} (isTest=true)", targetChannels);
+            log.info(
+                    "Test mode: using channels from request (empty=no dispatch): {}, projectName='{}', purposeName='{}' (isTest=true)",
+                    targetChannels, projectName, purposeName);
         }
 
-        // 2. Check if OTP from same secretKey and userId is already present; if so, delete it
+        // 2. Check if OTP from same secretKey and userId is already present; if so,
+        // delete it
         String redisKey = buildKey(effectiveSecretKey, userId);
         if (redisService.exists(redisKey)) {
             log.info("Existing OTP found for key '{}'. Deleting prior to new generation.", redisKey);
@@ -150,12 +182,15 @@ public class OtpService {
         redisService.setWithTtl(redisKey, otp, ttlSeconds);
         log.info("Generated and saved 6-digit OTP for key '{}' with TTL {}s (isTest={})", redisKey, ttlSeconds, isTest);
 
-        // 5. Dispatch notifications using Way 1, Way 2, or Both only if target channels are present
+        // 5. Dispatch notifications using Way 1, Way 2, or Both only if target channels
+        // are present
         List<String> dispatched = List.of();
         if (!targetChannels.isEmpty()) {
             dispatched = dispatchNotification(
                     targetChannels,
                     effectiveSecretKey,
+                    projectName,
+                    purposeName,
                     user,
                     purposeId,
                     otp,
@@ -172,7 +207,8 @@ public class OtpService {
                 .user(user)
                 .otp(otp)
                 .expiresInSeconds(ttlSeconds)
-                .channels(targetChannels.isEmpty() ? List.of() : (dispatched != null && !dispatched.isEmpty() ? dispatched : targetChannels))
+                .channels(targetChannels.isEmpty() ? List.of()
+                        : (dispatched != null && !dispatched.isEmpty() ? dispatched : targetChannels))
                 .build();
     }
 
@@ -208,11 +244,14 @@ public class OtpService {
     }
 
     /**
-     * Filters user contact fields based on the project's subscribed channels before dispatching:
+     * Filters user contact fields based on the project's subscribed channels before
+     * dispatching:
      * - If Email is present, only user.email is retained.
-     * - If SMS / Mobile / Phone is present, only user.phone/mobile (and countryCode) is retained.
+     * - If SMS / Mobile / Phone is present, only user.phone/mobile (and
+     * countryCode) is retained.
      * - If WhatsApp is present, only user.whatsapp (and countryCode) is retained.
-     * Fields for unsubscribed channels are set to null so they are omitted from dispatch payloads.
+     * Fields for unsubscribed channels are set to null so they are omitted from
+     * dispatch payloads.
      */
     public OtpUserDto filterUserByChannels(OtpUserDto user, List<String> channels) {
         if (user == null) {
@@ -270,7 +309,8 @@ public class OtpService {
             String otp,
             long ttlSeconds,
             String dispatchModeOverride) {
-        return dispatchNotification(targetChannels, secretKey, user, purposeId, otp, ttlSeconds, dispatchModeOverride, true);
+        return dispatchNotification(targetChannels, secretKey, null, null, user, purposeId, otp, ttlSeconds,
+                dispatchModeOverride, true);
     }
 
     /**
@@ -280,6 +320,26 @@ public class OtpService {
     public List<String> dispatchNotification(
             List<String> targetChannels,
             String secretKey,
+            OtpUserDto user,
+            String purposeId,
+            String otp,
+            long ttlSeconds,
+            String dispatchModeOverride,
+            boolean filterUser) {
+        return dispatchNotification(targetChannels, secretKey, null, null, user, purposeId, otp, ttlSeconds,
+                dispatchModeOverride, filterUser);
+    }
+
+    /**
+     * Dispatches notification according to the chosen dispatch mode (WAY_1, WAY_2,
+     * or BOTH), mentioning purpose in title and purpose name, project name, and OTP
+     * in description.
+     */
+    public List<String> dispatchNotification(
+            List<String> targetChannels,
+            String secretKey,
+            String projectName,
+            String purposeName,
             OtpUserDto user,
             String purposeId,
             String otp,
@@ -306,9 +366,8 @@ public class OtpService {
                 ? dispatchModeOverride.trim()
                 : (notificationProperties != null ? notificationProperties.getDispatchMode() : "WAY_1");
 
-        String title = "OTP Verification";
-        long minutes = Math.max(1, ttlSeconds / 60);
-        String message = "Your OTP is " + otp + ". Valid for " + minutes + " minutes.";
+        String title = otpNotificationTemplate.generateTitle(purposeName);
+        String message = otpNotificationTemplate.generateDescription(purposeName, projectName, otp, ttlSeconds);
 
         if (mode == null) {
             mode = "WAY_1";
@@ -316,21 +375,25 @@ public class OtpService {
 
         return switch (mode.toUpperCase()) {
             case "WAY_1", "INTERNAL_API", "REST", "HTTP" -> {
-                List<String> dispatched = dispatchViaInternalApi(secretKey, userForDispatch, title, message, targetChannels);
+                List<String> dispatched = dispatchViaInternalApi(secretKey, userForDispatch, title, message,
+                        targetChannels);
                 // Fallback to legacy producer if client returned empty or is not configured
                 if ((dispatched == null || dispatched.isEmpty()) && notificationServiceClient == null) {
-                    dispatched = notificationProducerService.dispatchToChannels(targetChannels, secretKey, userForDispatch,
-                            purposeId, otp, ttlSeconds);
+                    if (projectName != null || purposeName != null) {
+                        dispatched = notificationProducerService.dispatchToChannels(targetChannels, secretKey,
+                                projectName, purposeName,
+                                userForDispatch, purposeId, otp, ttlSeconds);
+                    } else {
+                        dispatched = notificationProducerService.dispatchToChannels(targetChannels, secretKey,
+                                userForDispatch, purposeId, otp, ttlSeconds);
+                    }
                 }
                 yield (dispatched != null && !dispatched.isEmpty()) ? dispatched : targetChannels;
             }
             case "WAY_2", "PRODUCER", "KAFKA", "DIRECT" -> {
-
                 yield dispatchViaKafkaProducer(targetChannels, userForDispatch, title, message);
             }
-            case "BOTH" ->
-
-            {
+            case "BOTH" -> {
                 log.info("Dispatching notification via BOTH Way 1 and Way 2");
                 List<String> r1 = dispatchViaInternalApi(secretKey, userForDispatch, title, message, targetChannels);
                 List<String> r2 = dispatchViaKafkaProducer(targetChannels, userForDispatch, title, message);
@@ -343,10 +406,17 @@ public class OtpService {
             }
             default -> {
                 log.warn("Unknown dispatch mode '{}', using Way 1", mode);
-                List<String> dispatched = dispatchViaInternalApi(secretKey, userForDispatch, title, message, targetChannels);
+                List<String> dispatched = dispatchViaInternalApi(secretKey, userForDispatch, title, message,
+                        targetChannels);
                 if ((dispatched == null || dispatched.isEmpty()) && notificationServiceClient == null) {
-                    dispatched = notificationProducerService.dispatchToChannels(targetChannels, secretKey, userForDispatch,
-                            purposeId, otp, ttlSeconds);
+                    if (projectName != null || purposeName != null) {
+                        dispatched = notificationProducerService.dispatchToChannels(targetChannels, secretKey,
+                                projectName, purposeName,
+                                userForDispatch, purposeId, otp, ttlSeconds);
+                    } else {
+                        dispatched = notificationProducerService.dispatchToChannels(targetChannels, secretKey,
+                                userForDispatch, purposeId, otp, ttlSeconds);
+                    }
                 }
                 yield (dispatched != null && !dispatched.isEmpty()) ? dispatched : targetChannels;
             }
