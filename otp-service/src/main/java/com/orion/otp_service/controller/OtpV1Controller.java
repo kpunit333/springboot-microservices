@@ -20,12 +20,12 @@ import lombok.extern.slf4j.Slf4j;
  * Controller for OTP generation and verification.
  *
  * Endpoints:
- * POST /api/otp/v1/generate
- * POST /api/otp/v1/verify
+ * POST /api/otp/v1/generate and POST /v1/generate
+ * POST /api/otp/v1/verify and POST /v1/verify
  */
 @Slf4j
 @RestController
-@RequestMapping({ "/api/otp/v1", "/api/otp", "/v1", "" })
+@RequestMapping({ "/api/otp/v1", "/v1" })
 public class OtpV1Controller {
 
         private final OtpService otpService;
@@ -36,7 +36,7 @@ public class OtpV1Controller {
         }
 
         /**
-         * POST /api/otp/v1/generate
+         * POST /api/otp/v1/generate or /v1/generate
          *
          * Payload:
          * {
@@ -69,7 +69,7 @@ public class OtpV1Controller {
         }
 
         /**
-         * POST /api/otp/v1/verify
+         * POST /api/otp/v1/verify or /v1/verify
          *
          * Payload:
          * {

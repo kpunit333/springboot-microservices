@@ -47,7 +47,8 @@ public class NotificationServiceImpl implements NotificationService {
 
         Project project = verifyAndGetProject(request.getSecretKey());
         List<String> channels = project.getChannels() != null ? project.getChannels() : List.of();
-        log.info("Verified project '{}' (ID: {}). Subscribed channels: {}", project.getName(), project.getId(), channels);
+        log.info("Verified project '{}' (ID: {}). Subscribed channels: {}", project.getName(), project.getId(),
+                channels);
 
         return dispatchNotifications(channels, request);
     }
@@ -101,11 +102,13 @@ public class NotificationServiceImpl implements NotificationService {
                 log.debug("SecretKey in internal request is not a UUID, falling back to all available channels");
             }
         }
-        // Fallback to all standard channels when secretKey is unverified or project is not present
+        // Fallback to all standard channels when secretKey is unverified or project is
+        // not present
         return List.of(Channel.EMAIL, Channel.SMS, Channel.WHATSAPP);
     }
 
-    private NotificationSendResponse dispatchNotifications(List<String> subscribedChannels, NotificationSendRequest request) {
+    private NotificationSendResponse dispatchNotifications(List<String> subscribedChannels,
+            NotificationSendRequest request) {
         NotificationUserDto user = request.getUser();
         String title = request.getTitle() != null ? request.getTitle() : "";
         String description = request.getDescription() != null ? request.getDescription() : "";
@@ -140,8 +143,12 @@ public class NotificationServiceImpl implements NotificationService {
                         .description(description)
                         .timestamp(Instant.now().toString())
                         .build();
-                notificationProducer.sendEmail(emailPayload);
-                dispatched.add(Channel.EMAIL);
+                try {
+                    notificationProducer.sendEmail(emailPayload);
+                    dispatched.add(Channel.EMAIL);
+                } catch (Exception e) {
+                    log.error("Failed to dispatch email notification to receiver '{}': {}", email, e.getMessage());
+                }
             } else {
                 log.warn("Email channel subscribed but user email is empty or null");
             }
@@ -158,8 +165,12 @@ public class NotificationServiceImpl implements NotificationService {
                         .description(description)
                         .timestamp(Instant.now().toString())
                         .build();
-                notificationProducer.sendSms(smsPayload);
-                dispatched.add(Channel.SMS);
+                try {
+                    notificationProducer.sendSms(smsPayload);
+                    dispatched.add(Channel.SMS);
+                } catch (Exception e) {
+                    log.error("Failed to dispatch SMS notification to receiver '{}': {}", receiver, e.getMessage());
+                }
             } else {
                 log.warn("SMS channel subscribed but user phone is empty or null");
             }
@@ -184,8 +195,13 @@ public class NotificationServiceImpl implements NotificationService {
                         .description(description)
                         .timestamp(Instant.now().toString())
                         .build();
-                notificationProducer.sendWhatsApp(waPayload);
-                dispatched.add(Channel.WHATSAPP);
+                try {
+                    notificationProducer.sendWhatsApp(waPayload);
+                    dispatched.add(Channel.WHATSAPP);
+                } catch (Exception e) {
+                    log.error("Failed to dispatch WhatsApp notification to receiver '{}': {}", receiver,
+                            e.getMessage());
+                }
             } else {
                 log.warn("WhatsApp channel subscribed but user whatsapp/phone is empty or null");
             }

@@ -22,7 +22,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @RestController
-@RequestMapping({ "/api/otp/v1/test", "/api/otp/test", "/v1/test", "/test" })
+@RequestMapping({ "/api/otp/v1/test", "/test" })
 public class OtpV1TestController {
 
         private final OtpService otpService;

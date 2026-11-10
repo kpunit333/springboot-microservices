@@ -35,7 +35,6 @@ spring.datasource.hikari.connection-timeout=20000
 # ===================================================================
 # Aiven Kafka Notification Service Configuration
 # ===================================================================
-spring.kafka.bootstrap-servers=${NOTIFICATION_SERVICE_HOST:your-aiven-kafka-host}:${NOTIFICATION_SERVICE_PORT:your_port}
 notification.service.url=${NOTIFICATION_SERVICE_URL:https://your-aiven-kafka-host:your_port}
 notification.service.host=${NOTIFICATION_SERVICE_HOST:your-aiven-kafka-host}
 notification.service.port=${NOTIFICATION_SERVICE_PORT:your_port}
@@ -44,4 +43,3 @@ notification.service.password=${NOTIFICATION_SERVICE_PASSWORD:your_aiven_passwor
 notification.service.topic-email=${NOTIFICATION_TOPIC_EMAIL:TOPIC_EMAIL}
 notification.service.topic-sms=${NOTIFICATION_TOPIC_SMS:TOPIC_SMS}
 notification.service.topic-whatsapp=${NOTIFICATION_TOPIC_WHATSAPP:TOPIC_WHATSAPP}
-

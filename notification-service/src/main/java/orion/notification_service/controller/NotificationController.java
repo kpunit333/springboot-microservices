@@ -3,7 +3,6 @@ package orion.notification_service.controller;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import orion.notification_service.dto.ApiResponse;
@@ -37,14 +36,15 @@ public class NotificationController {
     }
 
     /**
-     * Public V1 endpoint: verifies project secret key against PostgreSQL before dispatch.
+     * V1 public/client endpoint: verifies the secret key against the project table
+     * and sends notification to all the subscribed channels configured for the
+     * project.
      * Accessible via both /api/notifications/v1/send and /api/notifications/send.
      */
     @PostMapping({ "/api/notifications/v1/send", "/api/notifications/send" })
     public ResponseEntity<ApiResponse<NotificationSendResponse>> sendV1(
             @RequestBody NotificationSendRequest request) {
-        log.info("Received v1 notification send request for user: {}",
-                request.getUser() != null ? request.getUser().getId() : "null");
+        log.info("Received v1 notification send request for project secretKey: {}", request.getSecretKey());
 
         NotificationSendResponse response = notificationService.sendV1(request);
         return ResponseEntity.ok(ApiResponse.ok("Notification dispatched successfully", response));
