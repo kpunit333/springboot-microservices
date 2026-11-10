@@ -30,8 +30,9 @@ class NotificationControllerTest {
     @BeforeEach
     void setUp() {
         notificationService = mock(NotificationService.class);
-        NotificationController controller = new NotificationController(notificationService);
-        mockMvc = MockMvcBuilders.standaloneSetup(controller)
+        NotificationV1Controller v1Controller = new NotificationV1Controller(notificationService);
+        NotificationInternalV1Controller internalController = new NotificationInternalV1Controller(notificationService);
+        mockMvc = MockMvcBuilders.standaloneSetup(v1Controller, internalController)
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
     }

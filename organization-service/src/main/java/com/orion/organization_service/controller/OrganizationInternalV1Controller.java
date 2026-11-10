@@ -15,19 +15,13 @@ import com.orion.organization_service.service.OrganizationService;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Main controller for the organization-service, mounted at /api/organizations.
- *
- * Responsibilities:
- * - Internal endpoints consumed by the API Gateway (org login auth).
- *
- * Auth notes:
- * Internal endpoints are NOT meant for external clients — protect at the
- * network / gateway level.
+ * Controller for organization-service internal endpoints consumed by other services / API Gateway.
+ * Mounted at /api/organizations/internal/v1.
  */
 @Slf4j
 @RestController
 @RequestMapping("/api/organizations/internal/v1")
-public class OrganizationController {
+public class OrganizationInternalV1Controller {
 
     @Autowired
     private OrganizationService organizationService;
@@ -80,3 +74,4 @@ public class OrganizationController {
         return organizationService.validateProjectAndPurpose(secretKey, purposeId);
     }
 }
+

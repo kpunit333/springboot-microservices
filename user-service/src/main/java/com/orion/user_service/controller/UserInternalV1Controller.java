@@ -14,13 +14,14 @@ import com.orion.user_service.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Main controller for the user-service internal endpoints consumed by the API Gateway.
+ * Controller for user-service internal endpoints consumed by other services / API Gateway.
  * Supports authentication lookup via either username or email address.
+ * Mounted at /api/users/internal/v1.
  */
 @Slf4j
 @RestController
 @RequestMapping("/api/users/internal/v1")
-public class UserController {
+public class UserInternalV1Controller {
 
     @Autowired
     private UserService userService;
@@ -36,3 +37,4 @@ public class UserController {
         return userService.getByIdentifierForAuth(identifier);
     }
 }
+
