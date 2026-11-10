@@ -16,14 +16,14 @@ import lombok.extern.slf4j.Slf4j;
  * Health controller for the otp-service.
  * Mounted at /api/otp — falls under the /api/otp/** gateway route.
  *
- * GET /api/otp/health  → service health check (no auth required)
+ * GET /api/otp/health → service health check (no auth required)
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/otp")
+@RequestMapping({ "/api/otp", "" })
 public class HealthController {
 
-    @GetMapping("/health")
+    @GetMapping({ "/health", "/api/otp/health" })
     @ResponseStatus(HttpStatus.OK)
     public Map<String, Object> health() {
         log.debug("Health check requested for otp-service");

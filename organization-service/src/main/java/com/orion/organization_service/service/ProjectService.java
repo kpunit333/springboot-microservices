@@ -85,6 +85,10 @@ public class ProjectService {
                 ? request.getDescription().trim()
                 : null;
 
+        List<String> channels = (request.getChannels() != null)
+                ? request.getChannels().stream().map(String::trim).filter(s -> !s.isEmpty()).toList()
+                : new java.util.ArrayList<>();
+
         Project project = Project.builder()
                 .organizationId(organization.getId())
                 .name(request.getName().trim())
@@ -95,6 +99,7 @@ public class ProjectService {
                 .status(request.getStatus() != null && !request.getStatus().isBlank() 
                         ? request.getStatus().trim() 
                         : OrganizationStatus.ACTIVE)
+                .channels(channels)
                 .build();
 
         project = projectRepository.save(project);
@@ -170,6 +175,13 @@ public class ProjectService {
             if (request.getExpireAt() != null) {
                 project.setExpireAt(request.getExpireAt());
             }
+            if (request.getChannels() != null) {
+                List<String> updatedChannels = request.getChannels().stream()
+                        .map(String::trim)
+                        .filter(s -> !s.isEmpty())
+                        .toList();
+                project.setChannels(new java.util.ArrayList<>(updatedChannels));
+            }
         }
 
         project = projectRepository.save(project);
@@ -217,6 +229,13 @@ public class ProjectService {
         }
         if (request.getExpireAt() != null) {
             project.setExpireAt(request.getExpireAt());
+        }
+        if (request.getChannels() != null) {
+            List<String> updatedChannels = request.getChannels().stream()
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .toList();
+            project.setChannels(new java.util.ArrayList<>(updatedChannels));
         }
 
         project = projectRepository.save(project);
@@ -356,6 +375,7 @@ public class ProjectService {
                 .email(project.getEmail())
                 .createdAt(project.getCreatedAt())
                 .expireAt(project.getExpireAt())
+                .channels(project.getChannels() != null ? project.getChannels() : List.of())
                 .build();
     }
 }

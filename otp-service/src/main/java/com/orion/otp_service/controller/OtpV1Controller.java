@@ -1,5 +1,6 @@
 package com.orion.otp_service.controller;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -24,11 +25,12 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/otp/v1")
+@RequestMapping({ "/api/otp/v1", "/api/otp", "/v1", "" })
 public class OtpV1Controller {
 
         private final OtpService otpService;
 
+        @Autowired
         public OtpV1Controller(OtpService otpService) {
                 this.otpService = otpService;
         }
@@ -36,21 +38,31 @@ public class OtpV1Controller {
         /**
          * POST /api/otp/v1/generate
          *
-         * Takes secret key, user id, and purpose id.
-         * Validates secret key and purpose id.
-         * Deletes any existing OTP for the same (secretKey, userId).
-         * Generates a 6-digit OTP and stores it in Upstash Redis with a 5-minute TTL.
+         * Payload:
+         * {
+         * "secretKey": "",
+         * "purposeId": "",
+         * "user": {
+         * "id": "",
+         * "email": "",
+         * "phone": "",
+         * "countryCode": "",
+         * "whatsapp": ""
+         * }
+         * }
          */
         @PostMapping("/generate")
         public ResponseEntity<ApiResponse<OtpGenerateResponse>> generateOtp(@RequestBody OtpGenerateRequest request) {
+                String userId = request != null && request.getUser() != null ? request.getUser().getId() : null;
                 log.info("Received OTP generation request for secretKey={}, userId={}, purposeId={}",
                                 request != null ? request.getSecretKey() : null,
-                                request != null ? request.getUserId() : null,
+                                userId,
                                 request != null ? request.getPurposeId() : null);
 
                 OtpGenerateResponse response = otpService.generateOtp(request);
+                String respUserId = response.getUser() != null ? response.getUser().getId() : null;
                 log.info("OTP generated successfully for secretKey={}, userId={}", response.getSecretKey(),
-                                response.getUserId());
+                                respUserId);
 
                 return ResponseEntity.status(HttpStatus.CREATED)
                                 .body(ApiResponse.ok("OTP generated successfully", response));
@@ -59,20 +71,26 @@ public class OtpV1Controller {
         /**
          * POST /api/otp/v1/verify
          *
-         * Takes secret key, user id, and otp.
-         * Verifies the OTP from Redis.
-         * If correct, sends success and deletes OTP from Redis.
+         * Payload:
+         * {
+         * "secretKey": "",
+         * "user": {
+         * "id": ""
+         * },
+         * "otp": ""
+         * }
          */
         @PostMapping("/verify")
         public ResponseEntity<ApiResponse<Void>> verifyOtp(@RequestBody OtpVerifyRequest request) {
+                String userId = request != null && request.getUser() != null ? request.getUser().getId() : null;
                 log.info("Received OTP verification request for secretKey={}, userId={}",
                                 request != null ? request.getSecretKey() : null,
-                                request != null ? request.getUserId() : null);
+                                userId);
 
                 otpService.verifyOtp(request);
                 log.info("OTP verified successfully for secretKey={}, userId={}",
                                 request != null ? request.getSecretKey() : null,
-                                request != null ? request.getUserId() : null);
+                                userId);
 
                 return ResponseEntity.ok(ApiResponse.ok("OTP verified successfully", null));
         }

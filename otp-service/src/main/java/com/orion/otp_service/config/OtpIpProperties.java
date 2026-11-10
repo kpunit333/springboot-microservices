@@ -18,7 +18,7 @@ public class OtpIpProperties {
     /**
      * Whether IP restriction is enabled for sensitive OTP endpoints.
      */
-    private boolean enabled = true;
+    private boolean enabled = false;
 
     /**
      * List of allowed IP addresses, host:port combinations, or CIDR blocks.

@@ -325,4 +325,59 @@ class ProjectServiceTest {
         assertNotNull(response);
         assertNull(response.getDescription());
     }
+
+    @Test
+    void testCreateProjectWithChannels() {
+        Organization org = Organization.builder()
+                .id(42L)
+                .code("ORG_ALPHA")
+                .name("Alpha Org")
+                .build();
+
+        when(organizationRepository.findByCode("ORG_ALPHA")).thenReturn(Optional.of(org));
+        when(projectRepository.existsByEmail("channels@test.com")).thenReturn(false);
+        when(projectRepository.save(any(Project.class))).thenAnswer(inv -> {
+            Project p = inv.getArgument(0);
+            p.setId(301L);
+            p.prePersist();
+            return p;
+        });
+
+        List<String> channels = List.of("WHATSAPP", "SMS", "EMAIL");
+        ProjectRequest request = ProjectRequest.builder()
+                .name("Channels Project")
+                .email("channels@test.com")
+                .password("superPass123")
+                .channels(channels)
+                .build();
+
+        ProjectResponse response = projectService.create("ORG_ALPHA", request);
+
+        assertNotNull(response);
+        assertEquals(channels, response.getChannels());
+    }
+
+    @Test
+    void testUpdateProjectWithChannels() {
+        Organization org = Organization.builder().id(42L).code("ORG_ALPHA").build();
+        Project existing = Project.builder()
+                .id(1L)
+                .code("PRO_CH")
+                .name("Old Name")
+                .email("old@test.com")
+                .organizationId(42L)
+                .channels(List.of("SMS"))
+                .build();
+
+        when(organizationRepository.findByCode("ORG_ALPHA")).thenReturn(Optional.of(org));
+        when(projectRepository.findByCodeAndOrganizationId("PRO_CH", 42L)).thenReturn(Optional.of(existing));
+        when(projectRepository.save(any(Project.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        List<String> newChannels = List.of("WHATSAPP", "SMS", "EMAIL");
+        ProjectRequest updateReq = ProjectRequest.builder().channels(newChannels).build();
+        ProjectResponse response = projectService.updateForOrganization("ORG_ALPHA", "PRO_CH", updateReq);
+
+        assertNotNull(response);
+        assertEquals(newChannels, response.getChannels());
+    }
 }

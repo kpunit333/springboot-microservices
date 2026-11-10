@@ -16,14 +16,13 @@ import com.orion.otp_service.service.OtpService;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Controller for test endpoints mapped directly at root without /api/otp/v1
- * prefix:
- * POST /api/otp/v1/test/generate
- * POST /api/otp/v1/test/verify
+ * Controller for test endpoints:
+ * POST /api/otp/v1/test/generate and POST /test/generate
+ * POST /api/otp/v1/test/verify and POST /test/verify
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/otp/v1/test")
+@RequestMapping({ "/api/otp/v1/test", "/api/otp/test", "/v1/test", "/test" })
 public class OtpV1TestController {
 
         private final OtpService otpService;
@@ -35,14 +34,18 @@ public class OtpV1TestController {
         @PostMapping("/generate")
         public ResponseEntity<ApiResponse<OtpGenerateResponse>> generateOtp(
                         @RequestBody OtpGenerateRequest request) {
-                log.info("Received OTP generation request for secretKey={}, userId={}, purposeId={}",
+                String userId = request != null && request.getUser() != null ? request.getUser().getId() : null;
+                log.info("Received test OTP generation request for secretKey={}, userId={}, purposeId={}",
                                 request != null ? request.getSecretKey() : null,
-                                request != null ? request.getUserId() : null,
+                                userId,
                                 request != null ? request.getPurposeId() : null);
 
-                OtpGenerateResponse response = otpService.generateOtp(request);
-                log.info("OTP generated successfully for secretKey={}, userId={}", response.getSecretKey(),
-                                response.getUserId());
+                OtpGenerateResponse response = otpService.generateTestOtp(request);
+                String respUserId = response.getUser() != null ? response.getUser().getId() : null;
+                log.info("Test OTP generated successfully for secretKey={}, userId={}, channel={}",
+                                response.getSecretKey(),
+                                respUserId,
+                                response.getChannels());
 
                 return ResponseEntity.status(HttpStatus.CREATED)
                                 .body(ApiResponse.ok("OTP generated successfully", response));
@@ -50,14 +53,15 @@ public class OtpV1TestController {
 
         @PostMapping("/verify")
         public ResponseEntity<ApiResponse<Void>> verifyOtp(@RequestBody OtpVerifyRequest request) {
-                log.info("Received OTP verification request for secretKey={}, userId={}",
+                String userId = request != null && request.getUser() != null ? request.getUser().getId() : null;
+                log.info("Received test OTP verification request for secretKey={}, userId={}",
                                 request != null ? request.getSecretKey() : null,
-                                request != null ? request.getUserId() : null);
+                                userId);
 
                 otpService.verifyOtp(request);
-                log.info("OTP verified successfully for secretKey={}, userId={}",
+                log.info("Test OTP verified successfully for secretKey={}, userId={}",
                                 request != null ? request.getSecretKey() : null,
-                                request != null ? request.getUserId() : null);
+                                userId);
 
                 return ResponseEntity.ok(ApiResponse.ok("OTP verified successfully", null));
         }

@@ -1,12 +1,16 @@
 package com.orion.organization_service.model;
 
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import com.orion.organization_service.constant.OrganizationStatus;
 import com.orion.organization_service.util.CodeGenerator;
+import com.orion.organization_service.util.StringListConverter;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -66,6 +70,12 @@ public class Project {
     @Column(name = "password", length = 255, nullable = false)
     private String password;
 
+    /** Allowed delivery channels (e.g. WHATSAPP, SMS, EMAIL). */
+    @Convert(converter = StringListConverter.class)
+    @Column(name = "channels", columnDefinition = "text")
+    @Builder.Default
+    private List<String> channels = new ArrayList<>();
+
     @PrePersist
     public void prePersist() {
         if (this.secretKey == null) {
@@ -73,6 +83,9 @@ public class Project {
         }
         if (this.code == null || this.code.trim().isEmpty()) {
             this.code = CodeGenerator.generateProjectCode();
+        }
+        if (this.channels == null) {
+            this.channels = new ArrayList<>();
         }
     }
 }

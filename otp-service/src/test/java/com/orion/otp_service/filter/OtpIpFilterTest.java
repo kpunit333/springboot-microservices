@@ -24,6 +24,7 @@ import com.orion.otp_service.controller.OtpV1TestController;
 import com.orion.otp_service.controller.OtpV1Controller;
 import com.orion.otp_service.dto.OtpGenerateRequest;
 import com.orion.otp_service.dto.OtpGenerateResponse;
+import com.orion.otp_service.dto.OtpUserDto;
 import com.orion.otp_service.dto.OtpVerifyRequest;
 import com.orion.otp_service.exception.GlobalExceptionHandler;
 import com.orion.otp_service.service.OtpService;
@@ -58,15 +59,21 @@ class OtpIpFilterTest {
     private OtpGenerateRequest sampleGenerateRequest() {
         return OtpGenerateRequest.builder()
                 .secretKey("secret-123")
-                .userId("USR001")
                 .purposeId("PUR001")
+                .user(OtpUserDto.builder()
+                        .id("USR001")
+                        .email("user@example.com")
+                        .phone("9876543210")
+                        .countryCode("+1")
+                        .whatsapp("+19876543210")
+                        .build())
                 .build();
     }
 
     private OtpVerifyRequest sampleVerifyRequest() {
         return OtpVerifyRequest.builder()
                 .secretKey("secret-123")
-                .userId("USR001")
+                .user(OtpUserDto.builder().id("USR001").build())
                 .otp("123456")
                 .build();
     }
@@ -74,8 +81,8 @@ class OtpIpFilterTest {
     private OtpGenerateResponse sampleGenerateResponse() {
         return OtpGenerateResponse.builder()
                 .secretKey("secret-123")
-                .userId("USR001")
                 .purposeId("PUR001")
+                .user(OtpUserDto.builder().id("USR001").build())
                 .otp("123456")
                 .expiresInSeconds(300)
                 .build();
@@ -99,6 +106,35 @@ class OtpIpFilterTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.otp").value("123456"));
+    }
+
+    @Test
+    void generateEndpoint_AllowedIp_WithNewPayload_ReturnsSuccess() throws Exception {
+        when(otpService.generateOtp(any())).thenReturn(sampleGenerateResponse());
+
+        String newPayload = """
+                {
+                    "secretKey": "secret-123",
+                    "purposeId": "LOGIN",
+                    "user": {
+                        "id": "USR001",
+                        "email": "user@example.com",
+                        "phone": "9876543210",
+                        "countryCode": "+1",
+                        "whatsapp": "+19876543210"
+                    }
+                }
+                """;
+
+        mockMvc.perform(post("/api/otp/v1/generate")
+                .with(request -> {
+                    request.setRemoteAddr("127.0.0.1");
+                    return request;
+                })
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(newPayload))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.success").value(true));
     }
 
     @Test
@@ -183,6 +219,31 @@ class OtpIpFilterTest {
     }
 
     @Test
+    void verifyEndpoint_AllowedIp_WithNewPayload_ReturnsSuccess() throws Exception {
+        doNothing().when(otpService).verifyOtp(any());
+
+        String newPayload = """
+                {
+                    "secretKey": "secret-123",
+                    "user": {
+                        "id": "USR001"
+                    },
+                    "otp": "123456"
+                }
+                """;
+
+        mockMvc.perform(post("/api/otp/v1/verify")
+                .with(request -> {
+                    request.setRemoteAddr("127.0.0.1");
+                    return request;
+                })
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(newPayload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+    }
+
+    @Test
     void verifyEndpoint_DisallowedIp_ReturnsForbidden() throws Exception {
         mockMvc.perform(post("/api/otp/v1/verify")
                 .with(request -> {
@@ -203,7 +264,7 @@ class OtpIpFilterTest {
 
     @Test
     void apiTestGenerateEndpoint_DisallowedIp_StillAllowed() throws Exception {
-        when(otpService.generateOtp(any())).thenReturn(sampleGenerateResponse());
+        when(otpService.generateTestOtp(any())).thenReturn(sampleGenerateResponse());
 
         mockMvc.perform(post("/api/otp/v1/test/generate")
                 .with(request -> {
@@ -219,7 +280,7 @@ class OtpIpFilterTest {
 
     @Test
     void rootTestGenerateEndpoint_DisallowedIp_StillAllowed() throws Exception {
-        when(otpService.generateOtp(any())).thenReturn(sampleGenerateResponse());
+        when(otpService.generateTestOtp(any())).thenReturn(sampleGenerateResponse());
 
         mockMvc.perform(post("/test/generate")
                 .with(request -> {
@@ -294,6 +355,38 @@ class OtpIpFilterTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(sampleGenerateRequest())))
                 .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.success").value(true));
+    }
+
+    @Test
+    void filterDisabled_DisallowedIp_CanHitV1Generate() throws Exception {
+        properties.setEnabled(false);
+        when(otpService.generateOtp(any())).thenReturn(sampleGenerateResponse());
+
+        mockMvc.perform(post("/v1/generate")
+                .with(request -> {
+                    request.setRemoteAddr("198.51.100.5");
+                    return request;
+                })
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(sampleGenerateRequest())))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.success").value(true));
+    }
+
+    @Test
+    void filterDisabled_DisallowedIp_CanHitV1Verify() throws Exception {
+        properties.setEnabled(false);
+        doNothing().when(otpService).verifyOtp(any());
+
+        mockMvc.perform(post("/v1/verify")
+                .with(request -> {
+                    request.setRemoteAddr("198.51.100.5");
+                    return request;
+                })
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(sampleVerifyRequest())))
+                .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
     }
 }

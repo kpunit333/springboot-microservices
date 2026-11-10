@@ -266,6 +266,7 @@ public class OrganizationService {
                     .message("Project and purpose are valid and belong to the same organization")
                     .organizationId(project.getOrganizationId())
                     .secretKey(project.getSecretKey() != null ? project.getSecretKey().toString() : null)
+                    .channels(project.getChannels() != null ? project.getChannels() : java.util.Collections.emptyList())
                     .build();
         } catch (Exception e) {
             log.error("Error during project and purpose validation for secretKey='{}', purposeId='{}': {}",

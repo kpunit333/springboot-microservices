@@ -98,17 +98,26 @@ public class OtpIpFilter extends OncePerRequestFilter {
             return false;
         }
 
-        // Explicitly exempt all test endpoints
-        if (path.equals("/api/otp/v1/test/generate")
-                || path.equals("/api/otp/v1/test/verify")
-                || path.startsWith("/api/otp/v1/test/")
-                || path.startsWith("/actuator") || path.startsWith("/health")) {
+        // Explicitly exempt all test and monitoring endpoints
+        if (path.startsWith("/api/otp/v1/test")
+                || path.startsWith("/api/otp/test")
+                || path.startsWith("/v1/test")
+                || path.startsWith("/test")
+                || path.startsWith("/actuator")
+                || path.startsWith("/health")
+                || path.equals("/api/otp/health")) {
             return false;
         }
 
         // Only restrict production generate and verify endpoints
         return path.equals("/api/otp/v1/generate")
-                || path.equals("/api/otp/v1/verify");
+                || path.equals("/api/otp/generate")
+                || path.equals("/v1/generate")
+                || path.equals("/generate")
+                || path.equals("/api/otp/v1/verify")
+                || path.equals("/api/otp/verify")
+                || path.equals("/v1/verify")
+                || path.equals("/verify");
     }
 
     /**

@@ -21,5 +21,9 @@ public class ValidationResponse {
     private Long organizationId;
 
     private String secretKey;
+
+    @com.fasterxml.jackson.annotation.JsonProperty("channels")
+    @com.fasterxml.jackson.annotation.JsonAlias({ "channels", "channel" })
+    private java.util.List<String> channels;
 }
 

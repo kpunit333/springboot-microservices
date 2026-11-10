@@ -8,7 +8,7 @@ eureka.instance.prefer-ip-address=true
 eureka.instance.instance-id=${spring.application.name}:${server.port}
 
 # ─── Upstash Redis REST Configuration ─────────────────────────────────────────
-upstash.redis.rest.url=${UPSTASH_REDIS_REST_URL:https://fast-monitor-176817.upstash.io}
+upstash.redis.rest.url=${UPSTASH_REDIS_REST_URL:https://your-upstash-redis-url.upstash.io}
 upstash.redis.rest.token=${UPSTASH_REDIS_REST_TOKEN:your_upstash_redis_rest_token_here}
 
 # ─── OTP Lifecycle & Validation Settings ───────────────────────────────────────
@@ -16,5 +16,15 @@ otp.ttl.seconds=${OTP_TTL_SECONDS:300}
 otp.validation.project-purpose.enabled=${OTP_VALIDATE_PROJECT_PURPOSE:true}
 otp.validation.strict=${OTP_VALIDATION_STRICT:false}
 # ─── Allowed IPs Configuration ───────────────────────────────────────────────
-otp.allowed-ips.enabled=${OTP_ALLOWED_IPS_ENABLED:true}
+otp.allowed-ips.enabled=${OTP_ALLOWED_IPS_ENABLED:false}
 otp.allowed-ips.ips=${OTP_ALLOWED_IPS:127.0.0.1,::1,0:0:0:0:0:0:0:1,localhost}
+
+# ─── Aiven Kafka Notification Service Configuration ───────────────────────────
+notification.service.url=${NOTIFICATION_SERVICE_URL:https://your-aiven-kafka-host:your_port}
+notification.service.host=${NOTIFICATION_SERVICE_HOST:your-aiven-kafka-host}
+notification.service.port=${NOTIFICATION_SERVICE_PORT:your_port}
+notification.service.username=${NOTIFICATION_SERVICE_USER:your_aiven_username}
+notification.service.password=${NOTIFICATION_SERVICE_PASSWORD:your_aiven_password}
+notification.service.topic-email=${NOTIFICATION_TOPIC_EMAIL:TOPIC_EMAIL}
+notification.service.topic-sms=${NOTIFICATION_TOPIC_SMS:TOPIC_SMS}
+notification.service.topic-whatsapp=${NOTIFICATION_TOPIC_WHATSAPP:TOPIC_WHATSAPP}

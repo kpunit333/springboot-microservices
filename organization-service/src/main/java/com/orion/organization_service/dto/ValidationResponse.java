@@ -18,5 +18,7 @@ public class ValidationResponse {
     private Long organizationId;
 
     private String secretKey;
+
+    private java.util.List<String> channels;
 }
 
