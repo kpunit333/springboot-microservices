@@ -25,7 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-@RequestMapping({ "/api/notifications/v1", "/api/notifications" })
+@RequestMapping("/api/notifications/v1")
 public class NotificationV1Controller {
 
     private final NotificationService notificationService;
@@ -40,4 +40,3 @@ public class NotificationV1Controller {
         return ResponseEntity.ok(ApiResponse.ok("Notification dispatched successfully", response));
     }
 }
-

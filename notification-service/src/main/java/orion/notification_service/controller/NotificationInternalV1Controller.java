@@ -39,4 +39,3 @@ public class NotificationInternalV1Controller {
         return ResponseEntity.ok(ApiResponse.ok("Notification dispatched successfully (internal)", response));
     }
 }
-
